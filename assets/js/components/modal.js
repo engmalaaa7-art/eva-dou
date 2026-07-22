@@ -97,7 +97,7 @@ class ProductModalComponent {
           <div class="modal-header-info">
             <span class="modal-category">${p.categoryLabel}</span>
             <h2 class="modal-title">${p.name}</h2>
-            <p class="modal-slogan">"${p.slogan || 'كل رشة بتحكي حكاية... وكل ريحة بتعبر عن شخصيتك.'}"</p>
+            <p class="modal-slogan">"${p.slogan || 'Not just a fragrance… it’s a story of femininity called Eva Dou'}"</p>
           </div>
 
           <div class="modal-price-box">

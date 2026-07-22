@@ -1,6 +1,6 @@
 /**
  * Eva Dou - Product Data Catalog
- * 6 Signature Body Splash & Mist Products with Official Arabic Slogans
+ * 6 Signature Body Splash & Mist Products with Official English Slogans
  */
 
 const EVA_DOU_PRODUCTS = [
@@ -11,8 +11,8 @@ const EVA_DOU_PRODUCTS = [
     category: "body-splash",
     categoryLabel: "Body Splash & Mist",
     badge: "Bestseller",
-    slogan: "فخامة تُرافقك في كل خطوة.",
-    shortDescription: "فخامة تُرافقك في كل خطوة.",
+    slogan: "Elegance that accompanies your every step.",
+    shortDescription: "Elegance that accompanies your every step.",
     fullDescription: "Burberry Hai embodies timeless British elegance and refined allure. Opening with luminous notes of sun-drenched orchard blossoms and sweet mandarin, it settles into a heart of white peony and lavender. The lingering finish envelops your skin in velvety amber, soft musk, and comforting vanilla cream.",
     fragranceNotes: {
       top: "Crisp Apple, Fresh Mandarin, Orchard Blossom",
@@ -32,8 +32,8 @@ const EVA_DOU_PRODUCTS = [
     category: "body-splash",
     categoryLabel: "Body Splash & Mist",
     badge: "Signature",
-    slogan: "ثقة تُلفت الأنظار... ورائحة لا تُنسى.",
-    shortDescription: "ثقة تُلفت الأنظار... ورائحة لا تُنسى.",
+    slogan: "Unforgettable allure and effortless confidence.",
+    shortDescription: "Unforgettable allure and effortless confidence.",
     fullDescription: "Good Girl is an intoxicating contrast of light and shadow, created for the modern woman who embraces her duality. Radiant tuberose and sambac jasmine bring bright femininity, while dark roasted tonka bean and rich cocoa add an irresistible, seductive depth.",
     fragranceNotes: {
       top: "Almond, Bergamot, Coffee Blossom",
@@ -53,8 +53,8 @@ const EVA_DOU_PRODUCTS = [
     category: "body-splash",
     categoryLabel: "Body Splash & Mist",
     badge: "Trending",
-    slogan: "رائحة تُعلن حضورك... دون أن تقولي شيئًا.",
-    shortDescription: "رائحة تُعلن حضورك... دون أن تقولي شيئًا.",
+    slogan: "A scent that announces your presence effortlessly.",
+    shortDescription: "A scent that announces your presence effortlessly.",
     fullDescription: "Scandal is bold, sensual, and undeniably captivating. It opens with refreshing blood orange and citrus nectar before yielding to a rich heart of wild gardenia and honey nectar. The base lingers warmly with patchouli and golden caramel notes.",
     fragranceNotes: {
       top: "Blood Orange, Mandarin Nectar",
@@ -74,8 +74,8 @@ const EVA_DOU_PRODUCTS = [
     category: "body-splash",
     categoryLabel: "Body Splash & Mist",
     badge: "Sensual Choice",
-    slogan: "لأن الجاذبية تبدأ برائحة لا تُقاوم.",
-    shortDescription: "لأن الجاذبية تبدأ برائحة لا تُقاوم.",
+    slogan: "Because true attraction begins with an irresistible scent.",
+    shortDescription: "Because true attraction begins with an irresistible scent.",
     fullDescription: "So Sexy is designed to make heads turn. Infused with tropical passion fruit, sparkling nectarine, and delicate pink lotus, this mist wraps you in an enchanting aura of confidence and irresistible feminine glamour.",
     fragranceNotes: {
       top: "Purple Passion Fruit, Sparkling Nectarine",
@@ -95,8 +95,8 @@ const EVA_DOU_PRODUCTS = [
     category: "body-splash",
     categoryLabel: "Body Splash & Mist",
     badge: "Sweet Delight",
-    slogan: "انتعاش بطعم الفراولة... ينعش يومك من أول رشة.",
-    shortDescription: "انتعاش بطعم الفراولة... ينعش يومك من أول رشة.",
+    slogan: "Sweet strawberry freshness from the very first mist.",
+    shortDescription: "Sweet strawberry freshness from the very first mist.",
     fullDescription: "Strawberry is a playful, mouth-watering celebration of sweet summer fruits. Vibrant wild strawberry accords intertwine with pink sugar and velvety whipped cream to deliver an addictive, uplifting scent that stays fresh all day.",
     fragranceNotes: {
       top: "Wild Strawberry, Red Raspberry Nectar",
@@ -116,8 +116,8 @@ const EVA_DOU_PRODUCTS = [
     category: "body-splash",
     categoryLabel: "Body Splash & Mist",
     badge: "Hot Pick",
-    slogan: "لأن الأنوثة أحيانًا تبدأ برائحةٍ حلوة.",
-    shortDescription: "لأن الأنوثة أحيانًا تبدأ برائحةٍ حلوة.",
+    slogan: "Femininity begins with a touch of sweet luxury.",
+    shortDescription: "Femininity begins with a touch of sweet luxury.",
     fullDescription: "Yara Candy is an irresistible cloud of sweetness and oriental luxury. Succulent candied berries and creamy coconut milk melt into a soft heart of heliotrope and vanilla orchid, finished with a velvety cloud of powdered marshmallow.",
     fragranceNotes: {
       top: "Candied Berries, Coconut Milk, Fizzy Citrus",

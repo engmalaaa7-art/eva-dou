@@ -12,7 +12,7 @@ class EvaIntroComponent {
     this.skipBtn = document.getElementById('eva-intro-skip-btn');
     this.replayBtn = document.getElementById('eva-intro-replay-trigger');
     
-    this.fullSloganText = `"Not just a fragrance… it’s a story of femininity called Eva Dou" - كل رشة بتحكي حكاية... وكل ريحة بتعبر عن شخصيتك`;
+    this.fullSloganText = `"Not just a fragrance… it’s a story of femininity called Eva Dou"`;
     this.isPlaying = false;
     this.typewriterInterval = null;
     this.audioCtx = null;

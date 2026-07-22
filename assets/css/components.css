@@ -1041,8 +1041,10 @@
 }
 
 .footer-grid {
-  display: grid;
-  grid-template-columns: 2fr 1fr 1fr 1.5fr;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  flex-wrap: wrap;
   gap: 3rem;
   margin-bottom: 4rem;
 }
@@ -1193,7 +1195,7 @@
     width: 90%;
   }
   .footer-grid {
-    grid-template-columns: 1fr;
+    flex-direction: column;
     gap: 2.5rem;
   }
   .footer-bottom {
