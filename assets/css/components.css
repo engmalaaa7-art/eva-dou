@@ -1936,4 +1936,34 @@
   }
 }
 
+/* Typewriter & Motion Effects */
+.intro-typed-text {
+  background: linear-gradient(135deg, #FFFFFF 0%, #F7EBE1 60%, #E2C299 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  text-shadow: 0 0 15px rgba(226, 194, 153, 0.4);
+}
+
+.intro-cursor {
+  display: inline-block;
+  color: var(--accent-gold, #C59B6A);
+  font-weight: 300;
+  margin-left: 3px;
+  animation: cursorBlink 0.7s infinite alternate;
+}
+
+@keyframes cursorBlink {
+  0% { opacity: 1; text-shadow: 0 0 12px var(--accent-gold, #C59B6A); }
+  100% { opacity: 0; }
+}
+
+.eva-intro-brand {
+  animation: logoCinematicZoom 1.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes logoCinematicZoom {
+  0% { transform: scale(0.85); opacity: 0; filter: blur(10px); }
+  100% { transform: scale(1); opacity: 1; filter: blur(0); }
+}
+
 

@@ -1,18 +1,21 @@
 /**
- * Eva Dou - Luxury Voiceover Intro Component (Fail-safe & Cross-Browser Engine)
- * Synchronizes audio playback with animated typography and full-screen glass overlay.
+ * Eva Dou - Cinematic Sound Effect & Typewriter Motion Intro Engine
+ * Synchronizes audio playback with Web Audio sound effects, typewriter letter-by-letter animations, and gold motion graphics.
  */
 
 class EvaIntroComponent {
   constructor() {
     this.overlay = document.getElementById('eva-intro-overlay');
     this.audio = document.getElementById('eva-intro-audio');
+    this.sloganElement = document.getElementById('eva-intro-slogan');
     this.startBtn = document.getElementById('eva-intro-start-btn');
     this.skipBtn = document.getElementById('eva-intro-skip-btn');
     this.replayBtn = document.getElementById('eva-intro-replay-trigger');
     
+    this.fullSloganText = `"Not just a fragrance… it’s a story of femininity called Eva Dou"`;
     this.isPlaying = false;
-    this.autoTimer = null;
+    this.typewriterInterval = null;
+    this.audioCtx = null;
 
     this.init();
   }
@@ -22,10 +25,24 @@ class EvaIntroComponent {
 
     // Lock page scroll initially
     document.body.style.overflow = 'hidden';
-
-    // Ensure overlay is visible
     this.overlay.style.display = 'flex';
     this.overlay.classList.remove('dismissed');
+
+    // Prepare typewriter container
+    if (this.sloganElement) {
+      this.sloganElement.innerHTML = `<span class="intro-typed-text"></span><span class="intro-cursor">|</span>`;
+    }
+
+    // Bind interaction events
+    const handleFirstTouch = () => {
+      if (!this.isPlaying) {
+        this.startExperience();
+      }
+      window.removeEventListener('pointerdown', handleFirstTouch);
+      window.removeEventListener('touchstart', handleFirstTouch);
+    };
+    window.addEventListener('pointerdown', handleFirstTouch, { once: true });
+    window.addEventListener('touchstart', handleFirstTouch, { once: true });
 
     // Start Button listener
     if (this.startBtn) {
@@ -35,7 +52,7 @@ class EvaIntroComponent {
       });
     }
 
-    // Direct Overlay click listener for instant start
+    // Direct Overlay click listener
     this.overlay.addEventListener('click', (e) => {
       if (e.target !== this.skipBtn && !this.isPlaying) {
         this.startExperience();
@@ -50,16 +67,13 @@ class EvaIntroComponent {
       });
     }
 
-    // Audio end event listener
+    // Audio end listener
     if (this.audio) {
       this.audio.addEventListener('ended', () => {
+        this.playLuxuryChime(880, 0.4); // End chime
         setTimeout(() => {
           this.dismissIntro();
-        }, 800);
-      });
-
-      this.audio.addEventListener('error', (e) => {
-        console.warn('Audio playback error or missing file:', e);
+        }, 1200);
       });
     }
 
@@ -73,7 +87,55 @@ class EvaIntroComponent {
     // Auto-attempt play on load
     setTimeout(() => {
       this.attemptAutoPlay();
-    }, 400);
+    }, 300);
+  }
+
+  /**
+   * Synthesize luxury gold sound effects using Web Audio API
+   */
+  initWebAudio() {
+    try {
+      const AudioCtx = window.AudioContext || window.webkitAudioContext;
+      if (AudioCtx && !this.audioCtx) {
+        this.audioCtx = new AudioCtx();
+      }
+      if (this.audioCtx && this.audioCtx.state === 'suspended') {
+        this.audioCtx.resume();
+      }
+    } catch (e) {
+      console.warn('Web Audio API not supported:', e);
+    }
+  }
+
+  playLuxuryChime(freq = 523.25, duration = 0.3) {
+    try {
+      this.initWebAudio();
+      if (!this.audioCtx) return;
+
+      const osc = this.audioCtx.createOscillator();
+      const gain = this.audioCtx.createGain();
+
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(freq, this.audioCtx.currentTime);
+
+      gain.gain.setValueAtTime(0.08, this.audioCtx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.0001, this.audioCtx.currentTime + duration);
+
+      osc.connect(gain);
+      gain.connect(this.audioCtx.destination);
+
+      osc.start();
+      osc.stop(this.audioCtx.currentTime + duration);
+    } catch (e) {}
+  }
+
+  playSparkleSound() {
+    const notes = [523.25, 659.25, 783.99, 1046.50];
+    notes.forEach((freq, idx) => {
+      setTimeout(() => {
+        this.playLuxuryChime(freq, 0.5);
+      }, idx * 90);
+    });
   }
 
   attemptAutoPlay() {
@@ -84,19 +146,37 @@ class EvaIntroComponent {
 
     if (promise !== undefined) {
       promise.then(() => {
-        // Autoplay succeeded!
-        this.isPlaying = true;
-        if (this.overlay) this.overlay.classList.add('playing');
-        if (this.startBtn) this.startBtn.style.display = 'none';
+        // Autoplay succeeded
+        this.onPlayStarted();
       }).catch(() => {
-        // Autoplay blocked by browser policy - user click required
-        console.log('Autoplay blocked by browser policy. Waiting for user interaction.');
+        console.log('Autoplay waiting for user touch/click.');
       });
     }
   }
 
   startExperience() {
     if (this.isPlaying) return;
+    this.initWebAudio();
+
+    if (this.audio) {
+      this.audio.currentTime = 0;
+      const playPromise = this.audio.play();
+      if (playPromise !== undefined) {
+        playPromise.then(() => {
+          this.onPlayStarted();
+        }).catch(err => {
+          console.warn('Audio start error:', err);
+          this.onPlayStarted();
+        });
+      } else {
+        this.onPlayStarted();
+      }
+    } else {
+      this.onPlayStarted();
+    }
+  }
+
+  onPlayStarted() {
     this.isPlaying = true;
 
     if (this.overlay) {
@@ -107,36 +187,57 @@ class EvaIntroComponent {
       this.startBtn.style.display = 'none';
     }
 
-    // Play Audio
-    if (this.audio) {
-      this.audio.currentTime = 0;
-      const playPromise = this.audio.play();
-      if (playPromise !== undefined) {
-        playPromise.catch(err => {
-          console.warn('Audio play failed:', err);
-          // Fallback auto dismiss after 6 seconds if audio fails
-          this.autoTimer = setTimeout(() => {
-            this.dismissIntro();
-          }, 6000);
-        });
+    // Play sparkling sound effect
+    this.playSparkleSound();
+
+    // Start typewriter animation synchronized with text
+    this.startTypewriterAnimation();
+  }
+
+  startTypewriterAnimation() {
+    if (!this.sloganElement) return;
+
+    const textSpan = this.sloganElement.querySelector('.intro-typed-text');
+    if (!textSpan) return;
+
+    textSpan.textContent = '';
+    let index = 0;
+
+    if (this.typewriterInterval) clearInterval(this.typewriterInterval);
+
+    // Calculate typing speed based on voiceover duration (~6-7s)
+    const speed = Math.floor(6200 / this.fullSloganText.length);
+
+    this.typewriterInterval = setInterval(() => {
+      if (index < this.fullSloganText.length) {
+        const char = this.fullSloganText.charAt(index);
+        textSpan.textContent += char;
+
+        // Subtle audio tick on key words/spaces
+        if (char === ' ' || index % 5 === 0) {
+          this.playLuxuryChime(600 + (index * 6), 0.12);
+        }
+
+        index++;
+      } else {
+        clearInterval(this.typewriterInterval);
+        this.playSparkleSound();
       }
-    } else {
-      this.autoTimer = setTimeout(() => {
-        this.dismissIntro();
-      }, 5000);
-    }
+    }, speed);
   }
 
   dismissIntro() {
     if (!this.overlay) return;
 
-    if (this.autoTimer) {
-      clearTimeout(this.autoTimer);
+    if (this.typewriterInterval) {
+      clearInterval(this.typewriterInterval);
     }
 
     if (this.audio && !this.audio.paused) {
       this.audio.pause();
     }
+
+    this.playLuxuryChime(440, 0.4);
 
     this.overlay.classList.add('dismissed');
     document.body.style.overflow = '';
