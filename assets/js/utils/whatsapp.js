@@ -4,8 +4,8 @@
  * NOTE: Strictly no emojis, minimal & luxury-focused format.
  */
 
-// BUSINESS PHONE NUMBER CONFIGURATION
-const EVA_DOU_WHATSAPP_NUMBER = '201067568065';
+// BUSINESS PHONE NUMBER & VODAFONE CASH CONFIGURATION
+const EVA_DOU_WHATSAPP_NUMBER = '201002980954';
 
 /**
  * Gets next sequential order ID starting from 1 (#EVD-0001, #EVD-0002...)

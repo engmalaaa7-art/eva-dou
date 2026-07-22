@@ -202,8 +202,8 @@ class CheckoutModalComponent {
             </div>
 
             <div class="summary-trust-notice">
-              <p>Direct WhatsApp Order Confirmation</p>
-              <small>No online payment required. Pay on delivery or via digital wallet after order confirmation.</small>
+              <p>Direct WhatsApp & Cash Payment</p>
+              <small>Cash on Delivery or Vodafone Cash / Digital Wallet (01002980954).</small>
             </div>
           </div>
         </div>
@@ -253,7 +253,7 @@ class CheckoutModalComponent {
         whatsappUrl = window.buildWhatsAppUrl(customerData, cartItems, subtotal);
       } else {
         const orderId = window.generateOrderId ? window.generateOrderId() : '#EVD-0001';
-        const phoneNum = (window.EVA_DOU_WHATSAPP_NUMBER || '201067568065').replace(/[^0-9]/g, '');
+        const phoneNum = (window.EVA_DOU_WHATSAPP_NUMBER || '201002980954').replace(/[^0-9]/g, '');
         const itemsText = cartItems.map(i => `- ${i.name} (${i.size}) x ${i.quantity} = ${i.price * i.quantity} EGP`).join('\n');
         const msg = [
           'NEW ORDER FROM EVA DOU WEBSITE',
