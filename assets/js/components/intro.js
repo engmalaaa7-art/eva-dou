@@ -1,5 +1,5 @@
 /**
- * Eva Dou - Luxury Voiceover Intro Component
+ * Eva Dou - Luxury Voiceover Intro Component (Fail-safe & Cross-Browser Engine)
  * Synchronizes audio playback with animated typography and full-screen glass overlay.
  */
 
@@ -22,6 +22,10 @@ class EvaIntroComponent {
 
     // Lock page scroll initially
     document.body.style.overflow = 'hidden';
+
+    // Ensure overlay is visible
+    this.overlay.style.display = 'flex';
+    this.overlay.classList.remove('dismissed');
 
     // Start Button listener
     if (this.startBtn) {
@@ -46,23 +50,16 @@ class EvaIntroComponent {
       });
     }
 
-    // Optional Replay Trigger (in header or footer)
-    if (this.replayBtn) {
-      this.replayBtn.addEventListener('click', () => {
-        this.showAndPlay();
-      });
-    }
-
     // Audio end event listener
     if (this.audio) {
       this.audio.addEventListener('ended', () => {
         setTimeout(() => {
           this.dismissIntro();
-        }, 600);
+        }, 800);
       });
 
       this.audio.addEventListener('error', (e) => {
-        console.warn('Audio playback encountered error or missing file:', e);
+        console.warn('Audio playback error or missing file:', e);
       });
     }
 
@@ -72,6 +69,30 @@ class EvaIntroComponent {
         this.dismissIntro();
       }
     });
+
+    // Auto-attempt play on load
+    setTimeout(() => {
+      this.attemptAutoPlay();
+    }, 400);
+  }
+
+  attemptAutoPlay() {
+    if (!this.audio || this.isPlaying) return;
+
+    this.audio.currentTime = 0;
+    const promise = this.audio.play();
+
+    if (promise !== undefined) {
+      promise.then(() => {
+        // Autoplay succeeded!
+        this.isPlaying = true;
+        if (this.overlay) this.overlay.classList.add('playing');
+        if (this.startBtn) this.startBtn.style.display = 'none';
+      }).catch(() => {
+        // Autoplay blocked by browser policy - user click required
+        console.log('Autoplay blocked by browser policy. Waiting for user interaction.');
+      });
+    }
   }
 
   startExperience() {
@@ -92,7 +113,7 @@ class EvaIntroComponent {
       const playPromise = this.audio.play();
       if (playPromise !== undefined) {
         playPromise.catch(err => {
-          console.log('Autoplay prevented or audio blocked:', err);
+          console.warn('Audio play failed:', err);
           // Fallback auto dismiss after 6 seconds if audio fails
           this.autoTimer = setTimeout(() => {
             this.dismissIntro();
@@ -104,11 +125,6 @@ class EvaIntroComponent {
         this.dismissIntro();
       }, 5000);
     }
-
-    // Safety fallback timer if audio duration is long or hung
-    this.autoTimer = setTimeout(() => {
-      this.dismissIntro();
-    }, 12000);
   }
 
   dismissIntro() {
