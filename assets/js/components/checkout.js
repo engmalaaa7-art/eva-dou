@@ -240,6 +240,12 @@ class CheckoutModalComponent {
         errorBanner.style.display = 'none';
       }
 
+      const submitBtn = document.getElementById('checkout-submit-btn');
+      if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = 'Generating PDF Invoice...';
+      }
+
       const store = this.cartStore || window.cartInstance;
       if (!store || store.getItemCount() === 0) return;
 
@@ -248,45 +254,76 @@ class CheckoutModalComponent {
       const subtotal = store.getSubtotal();
       const orderId = window.generateOrderId ? window.generateOrderId() : `#EVD-${Math.floor(1000 + Math.random() * 9000)}`;
 
-      // Format WhatsApp URL via utility
-      let whatsappUrl = '';
-      if (typeof window.buildWhatsAppUrl === 'function') {
-        whatsappUrl = window.buildWhatsAppUrl(customerData, cartItems, subtotal, orderId);
-      } else {
-        const phoneNum = (window.EVA_DOU_WHATSAPP_NUMBER || '201067568065').replace(/[^0-9]/g, '');
-        const itemsText = cartItems.map(i => `- ${i.name} (${i.size}) x ${i.quantity} = ${i.price * i.quantity} EGP`).join('\n');
-        const msg = [
-          'NEW ORDER FROM EVA DOU WEBSITE',
-          '====================================',
-          `Order ID: ${orderId}`,
-          `Customer Name: ${name}`,
-          `Phone Number: ${phone}`,
-          `City/Governorate: ${city}`,
-          `Detailed Address: ${address}`,
-          '',
-          'ORDER DETAILS:',
-          '------------------------------------',
-          itemsText,
-          '',
-          `SUBTOTAL: ${subtotal} EGP`,
-          'Shipping Fee: Calculated upon order confirmation.',
-          '====================================',
-          'Thank you for choosing Eva Dou.'
-        ].join('\n');
-        whatsappUrl = `https://wa.me/${phoneNum}?text=${encodeURIComponent(msg)}`;
+      // Generate & Download PDF Invoice automatically
+      if (typeof window.downloadInvoicePDF === 'function') {
+        window.downloadInvoicePDF(customerData, cartItems, subtotal, orderId).catch(err => {
+          console.warn('PDF download fallback error:', err);
+        });
       }
+
+      // Format WhatsApp Message
+      const phoneNum = (window.EVA_DOU_WHATSAPP_NUMBER || '201067568065').replace(/[^0-9]/g, '');
+      const msg = [
+        'NEW ORDER FROM EVA DOU WEBSITE',
+        '====================================',
+        `Order ID: ${orderId}`,
+        `Customer Name: ${name}`,
+        `Phone Number: ${phone}`,
+        `City/Governorate: ${city}`,
+        `Detailed Address: ${address}`,
+        '',
+        `SUBTOTAL: ${subtotal.toLocaleString()} EGP`,
+        'Shipping Fee: Calculated upon confirmation.',
+        'PDF Invoice: Generated and downloaded automatically.',
+        '====================================',
+        'Thank you for choosing Eva Dou.'
+      ].join('\n');
+      const whatsappUrl = `https://wa.me/${phoneNum}?text=${encodeURIComponent(msg)}`;
 
       // Clear cart
       store.clearCart();
 
-      // Close modal and drawer
-      this.close();
-      if (window.cartDrawerInstance && window.cartDrawerInstance.close) {
-        window.cartDrawerInstance.close();
-      }
+      // Show Success & PDF Download Confirmation View inside Checkout Modal
+      const body = document.getElementById('checkout-body');
+      if (body) {
+        body.innerHTML = `
+          <div style="text-align: center; padding: 2rem 1rem;">
+            <div style="width: 64px; height: 64px; background-color: var(--bg-surface); border: 2px solid var(--accent-gold); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 1.5rem auto;">
+              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="var(--accent-gold)" stroke-width="2.5">
+                <path d="M20 6L9 17l-5-5"/>
+              </svg>
+            </div>
+            
+            <h3 style="font-family: var(--font-heading); font-size: 1.8rem; color: var(--text-primary); margin-bottom: 0.5rem;">
+              Order Confirmed & PDF Downloaded!
+            </h3>
+            
+            <p style="color: var(--text-secondary); font-size: 0.95rem; margin-bottom: 1.5rem;">
+              Your official PDF Invoice (Order ID: <strong style="color: var(--accent-gold);">${orderId}</strong>) has been generated and saved to your device.
+            </p>
 
-      // Redirect to WhatsApp
-      window.location.href = whatsappUrl;
+            <div style="display: flex; flex-direction: column; gap: 1rem; max-width: 400px; margin: 0 auto;">
+              <a href="${whatsappUrl}" target="_blank" rel="noopener noreferrer" class="btn btn-gold" style="width: 100%; text-decoration: none;">
+                Chat on WhatsApp to Finalize Delivery
+              </a>
+              
+              <button id="redownload-pdf-btn" class="btn btn-outline" style="width: 100%;">
+                Download PDF Invoice Again
+              </button>
+            </div>
+          </div>
+        `;
+
+        // Re-download listener
+        const redownloadBtn = document.getElementById('redownload-pdf-btn');
+        if (redownloadBtn) {
+          redownloadBtn.addEventListener('click', () => {
+            if (typeof window.downloadInvoicePDF === 'function') {
+              window.downloadInvoicePDF(customerData, cartItems, subtotal, orderId);
+            }
+          });
+        }
+      }
     });
   }
 }
