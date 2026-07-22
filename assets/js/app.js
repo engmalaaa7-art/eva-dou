@@ -35,6 +35,11 @@ document.addEventListener('DOMContentLoaded', () => {
   if (typeof window.CheckoutModalComponent !== 'undefined') {
     window.checkoutModalInstance = new window.CheckoutModalComponent();
   }
+
+  // Instantiate Voiceover Intro Component
+  if (typeof window.EvaIntroComponent !== 'undefined') {
+    window.evaIntroInstance = new window.EvaIntroComponent();
+  }
 });
 
 /**

@@ -1778,4 +1778,162 @@
   }
 }
 
+/* ==========================================
+   LUXURY BRAND INTRO OVERLAY (VOICEOVER)
+   ========================================== */
+.eva-intro-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: 999999;
+  background: radial-gradient(circle at center, #2C2520 0%, #1A1614 60%, #120F0D 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+  overflow: hidden;
+  opacity: 1;
+  visibility: visible;
+  transition: opacity 0.8s cubic-bezier(0.16, 1, 0.3, 1), visibility 0.8s ease;
+  cursor: pointer;
+}
+
+.eva-intro-overlay.dismissed {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.eva-intro-backdrop {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 700px;
+  height: 700px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(197, 155, 106, 0.15) 0%, rgba(0, 0, 0, 0) 70%);
+  filter: blur(40px);
+  pointer-events: none;
+  animation: introPulse 4s ease-in-out infinite alternate;
+}
+
+@keyframes introPulse {
+  0% { transform: translate(-50%, -50%) scale(0.9); opacity: 0.6; }
+  100% { transform: translate(-50%, -50%) scale(1.15); opacity: 0.95; }
+}
+
+.eva-intro-content {
+  position: relative;
+  z-index: 10;
+  max-width: 780px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2rem;
+}
+
+.eva-intro-logo-box {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.eva-intro-brand {
+  font-family: var(--font-heading);
+  font-size: 3.8rem;
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  background: linear-gradient(135deg, #FFFFFF 0%, #F5E5D3 40%, #C59B6A 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  line-height: 1.1;
+  filter: drop-shadow(0 4px 12px rgba(197, 155, 106, 0.3));
+}
+
+.eva-intro-sub {
+  font-size: 0.75rem;
+  letter-spacing: 0.35em;
+  text-transform: uppercase;
+  color: #D4AF37;
+  margin-top: 0.5rem;
+  opacity: 0.9;
+}
+
+.eva-intro-slogan-wrapper {
+  margin-top: 1rem;
+  position: relative;
+}
+
+.eva-intro-slogan {
+  font-family: var(--font-heading);
+  font-size: 1.6rem;
+  font-style: italic;
+  color: #F7EBE1;
+  line-height: 1.5;
+  font-weight: 300;
+  letter-spacing: 0.02em;
+  text-shadow: 0 2px 10px rgba(0,0,0,0.5);
+  transition: all 0.6s ease;
+}
+
+.eva-intro-overlay.playing .eva-intro-slogan {
+  color: #FFFFFF;
+  text-shadow: 0 0 20px rgba(226, 194, 153, 0.6);
+  transform: scale(1.03);
+}
+
+.eva-intro-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  margin-top: 1.5rem;
+}
+
+.eva-intro-btn {
+  padding: 0.9rem 2.2rem;
+  font-size: 0.95rem;
+  letter-spacing: 0.12em;
+  border-radius: var(--radius-full);
+  box-shadow: 0 8px 24px rgba(197, 155, 106, 0.4);
+  animation: btnGlow 2s infinite alternate;
+}
+
+@keyframes btnGlow {
+  0% { box-shadow: 0 0 15px rgba(197, 155, 106, 0.4); }
+  100% { box-shadow: 0 0 30px rgba(197, 155, 106, 0.8); }
+}
+
+.eva-intro-skip-link {
+  background: transparent;
+  border: none;
+  color: #9E8E82;
+  font-size: 0.82rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  cursor: pointer;
+  padding: 0.4rem 0.8rem;
+  transition: color var(--transition-fast);
+}
+
+.eva-intro-skip-link:hover {
+  color: #FFFFFF;
+  text-decoration: underline;
+}
+
+@media (max-width: 768px) {
+  .eva-intro-brand {
+    font-size: 2.5rem;
+    letter-spacing: 0.15em;
+  }
+  .eva-intro-slogan {
+    font-size: 1.25rem;
+  }
+}
+
 

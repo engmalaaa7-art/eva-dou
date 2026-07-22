@@ -16,6 +16,41 @@
 <body>
 
   <!-- ==========================================
+       LUXURY BRAND INTRO OVERLAY (VOICEOVER)
+       ========================================== -->
+  <div id="eva-intro-overlay" class="eva-intro-overlay" role="dialog" aria-label="Eva Dou Brand Intro">
+    <div class="eva-intro-backdrop"></div>
+    <div class="eva-intro-content">
+      <div class="eva-intro-logo-box">
+        <span class="eva-intro-brand">EVA DOU</span>
+        <span class="eva-intro-sub">Parfums & Cosmétiques</span>
+      </div>
+      
+      <div class="eva-intro-slogan-wrapper">
+        <p class="eva-intro-slogan" id="eva-intro-slogan">
+          "Not just a fragrance… it’s a story of femininity called Eva Dou"
+        </p>
+      </div>
+
+      <div class="eva-intro-actions">
+        <button id="eva-intro-start-btn" class="btn btn-gold eva-intro-btn">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 8px;">
+            <polygon points="5 3 19 12 5 21 5 3"/>
+          </svg>
+          Experience Eva Dou
+        </button>
+        <button id="eva-intro-skip-btn" class="eva-intro-skip-link">Skip Intro</button>
+      </div>
+    </div>
+
+    <!-- Audio Element Engine -->
+    <audio id="eva-intro-audio" preload="auto">
+      <source src="assets/intro vouce.mp3" type="audio/mpeg">
+      <source src="assets/intro voice.mp3" type="audio/mpeg">
+    </audio>
+  </div>
+
+  <!-- ==========================================
        SITE HEADER & NAVIGATION
        ========================================== -->
   <header class="site-header" id="site-header">
@@ -228,7 +263,11 @@
       <!-- Footer Bottom Bar -->
       <div class="footer-bottom">
         <p>&copy; 2026 Eva Dou Parfums & Cosmétiques. All rights reserved.</p>
-        <p>Developed by <strong>ATZ Studio</strong></p>
+        <p style="display: flex; align-items: center; gap: 1rem;">
+          <button id="eva-intro-replay-trigger" onclick="window.playEvaIntro && window.playEvaIntro()" class="eva-intro-skip-link" style="padding: 0; text-transform: none;">Replay Voiceover</button>
+          <span>|</span>
+          <span>Developed by <strong>ATZ Studio</strong></span>
+        </p>
       </div>
     </div>
   </footer>
@@ -241,6 +280,7 @@
   <script src="assets/js/components/modal.js"></script>
   <script src="assets/js/components/catalog.js"></script>
   <script src="assets/js/components/checkout.js"></script>
+  <script src="assets/js/components/intro.js"></script>
   <script src="assets/js/app.js"></script>
 </body>
 </html>
