@@ -246,13 +246,13 @@ class CheckoutModalComponent {
       const customerData = { name, phone, city, address };
       const cartItems = store.getCart();
       const subtotal = store.getSubtotal();
-      const orderId = window.generateOrderId ? window.generateOrderId() : `#EVD-${Math.floor(1000 + Math.random() * 9000)}`;
 
-      // Build WhatsApp URL via utility or fallback
+      // Build WhatsApp URL via utility (generates sequential #EVD-0001, #EVD-0002... and logs order)
       let whatsappUrl = '';
       if (typeof window.buildWhatsAppUrl === 'function') {
-        whatsappUrl = window.buildWhatsAppUrl(customerData, cartItems, subtotal, orderId);
+        whatsappUrl = window.buildWhatsAppUrl(customerData, cartItems, subtotal);
       } else {
+        const orderId = window.generateOrderId ? window.generateOrderId() : '#EVD-0001';
         const phoneNum = (window.EVA_DOU_WHATSAPP_NUMBER || '201067568065').replace(/[^0-9]/g, '');
         const itemsText = cartItems.map(i => `- ${i.name} (${i.size}) x ${i.quantity} = ${i.price * i.quantity} EGP`).join('\n');
         const msg = [
