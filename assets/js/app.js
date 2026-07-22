@@ -3,8 +3,8 @@
  */
 
 document.addEventListener('DOMContentLoaded', () => {
-  console.log('🌸 Eva Dou Application initialized.');
-  console.log('✨ Brand Slogan: "Not just a fragrance… it’s a story of femininity called Eva Dou"');
+  console.log('Eva Dou Application initialized.');
+  console.log('Brand Slogan: "Not just a fragrance… it’s a story of femininity called Eva Dou"');
 
   // Initialize UI components
   initHeaderScrollEffect();

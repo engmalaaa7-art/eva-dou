@@ -169,7 +169,11 @@ class CatalogComponent {
   renderEmptyCategory(categoryName) {
     this.container.innerHTML = `
       <div class="category-empty-state">
-        <div class="empty-icon">✨</div>
+        <div class="empty-icon">
+          <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+            <path d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+          </svg>
+        </div>
         <h3>${categoryName} Line Arriving Soon</h3>
         <p>We are meticulously crafting new luxury fragrances for this line. Explore our signature <strong>Body Splash & Mist</strong> collection above!</p>
         <button class="btn btn-primary" onclick="document.querySelector('[data-category=body-splash]').click()">

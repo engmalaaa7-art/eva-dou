@@ -247,7 +247,11 @@ class CartDrawerComponent {
     if (items.length === 0) {
       body.innerHTML = `
         <div class="cart-empty-state">
-          <div class="cart-empty-icon">🌸</div>
+          <div class="cart-empty-icon">
+            <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+              <path d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"/>
+            </svg>
+          </div>
           <h4 class="cart-empty-title">Your cart is currently empty</h4>
           <p class="cart-empty-text">
             Explore our Body Splash & Mist collection to discover your signature scent!

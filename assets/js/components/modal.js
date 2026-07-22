@@ -150,8 +150,8 @@ class ProductModalComponent {
           </div>
 
           <div class="modal-trust-footer">
-            <span>🚚 Express Delivery Across Egypt</span>
-            <span>📱 Direct WhatsApp Checkout</span>
+            <span>Express Delivery Across Egypt</span>
+            <span>Direct WhatsApp Checkout</span>
           </div>
 
         </div>
@@ -209,7 +209,7 @@ class ProductModalComponent {
         }
         
         // Visual feedback
-        ctaBtn.innerHTML = `✓ Added ${this.selectedQuantity} to Cart!`;
+        ctaBtn.innerHTML = `Added ${this.selectedQuantity} to Cart!`;
         ctaBtn.style.backgroundColor = 'var(--accent-gold)';
         
         setTimeout(() => {
