@@ -87,6 +87,7 @@ class AdminComponent {
 
   close() {
     if (!this.overlay) return;
+    this.stopAutoSync();
     this.overlay.classList.remove('open');
     this.overlay.setAttribute('aria-hidden', 'true');
     document.body.style.overflow = '';
@@ -94,6 +95,24 @@ class AdminComponent {
     // Clear #admin hash cleanly if present
     if (window.location.hash === '#admin') {
       history.pushState("", document.title, window.location.pathname + window.location.search);
+    }
+  }
+
+  startAutoSync() {
+    this.stopAutoSync();
+    this.autoSyncTimer = setInterval(() => {
+      if (this.db && typeof this.db.syncGlobalStateFromCloud === 'function') {
+        this.db.syncGlobalStateFromCloud().then(() => {
+          this.renderDashboard();
+        });
+      }
+    }, 10000);
+  }
+
+  stopAutoSync() {
+    if (this.autoSyncTimer) {
+      clearInterval(this.autoSyncTimer);
+      this.autoSyncTimer = null;
     }
   }
 
@@ -385,15 +404,20 @@ class AdminComponent {
       </div>
     `;
 
-    this.bindDashboardEvents();
-  }
-
   bindDashboardEvents() {
+    this.startAutoSync();
+
     const refreshBtn = document.getElementById('admin-refresh-btn');
     const logoutBtn = document.getElementById('admin-logout-btn');
 
     if (refreshBtn) {
-      refreshBtn.addEventListener('click', () => this.renderDashboard());
+      refreshBtn.addEventListener('click', () => {
+        if (this.db && typeof this.db.syncGlobalStateFromCloud === 'function') {
+          this.db.syncGlobalStateFromCloud().then(() => this.renderDashboard());
+        } else {
+          this.renderDashboard();
+        }
+      });
     }
 
     if (logoutBtn) {
