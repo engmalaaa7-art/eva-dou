@@ -54,6 +54,16 @@ class AdminComponent {
       this.open();
     });
 
+    // Delegated click listener for any Owner Login links or buttons across the page
+    document.addEventListener('click', (e) => {
+      const adminTrigger = e.target.closest('a[href="#admin"], #owner-login-btn, .owner-login-btn');
+      if (adminTrigger) {
+        e.preventDefault();
+        e.stopPropagation();
+        this.open();
+      }
+    });
+
     // Handle escape key
     document.addEventListener('keydown', (e) => {
       if (e.key === 'Escape' && this.isOpen()) {
