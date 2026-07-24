@@ -414,6 +414,9 @@ class AdminComponent {
       </div>
     `;
 
+    this.bindDashboardEvents();
+  }
+
   bindDashboardEvents() {
     this.startAutoSync();
 
