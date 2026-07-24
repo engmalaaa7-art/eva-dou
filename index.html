@@ -12,6 +12,7 @@
   <!-- Stylesheets -->
   <link rel="stylesheet" href="assets/css/main.css?v=1.1">
   <link rel="stylesheet" href="assets/css/components.css?v=1.1">
+  <link rel="stylesheet" href="assets/css/admin.css?v=1.1">
 </head>
 <body>
 
@@ -276,6 +277,8 @@
         <p style="display: flex; align-items: center; gap: 1rem;">
           <button id="eva-intro-replay-trigger" onclick="window.playEvaIntro && window.playEvaIntro()" class="eva-intro-skip-link" style="padding: 0; text-transform: none;">Replay Voiceover</button>
           <span>|</span>
+          <a href="#admin" onclick="if(window.adminInstance){window.adminInstance.open();}else{window.location.hash='#admin';} return false;" class="eva-intro-skip-link" style="padding: 0; text-transform: none; opacity: 0.6;">Owner Login</a>
+          <span>|</span>
           <span>Developed by <strong>ATZ Studio</strong></span>
         </p>
       </div>
@@ -284,12 +287,14 @@
 
   <!-- Scripts Sequence -->
   <script src="assets/js/data/products.js?v=1.1"></script>
+  <script src="assets/js/store/db.js?v=1.1"></script>
   <script src="assets/js/utils/whatsapp.js?v=1.1"></script>
   <script src="assets/js/store/cart.js?v=1.1"></script>
   <script src="assets/js/components/drawer.js?v=1.1"></script>
   <script src="assets/js/components/modal.js?v=1.1"></script>
   <script src="assets/js/components/catalog.js?v=1.1"></script>
   <script src="assets/js/components/checkout.js?v=1.1"></script>
+  <script src="assets/js/components/admin.js?v=1.1"></script>
   <script src="assets/js/components/intro.js?v=1.1"></script>
   <script src="assets/js/app.js?v=1.1"></script>
 </body>

@@ -84,6 +84,16 @@ function buildWhatsAppUrl(customerData, cartItems, subtotal, orderId) {
   // Log order in background storage
   logOrder(finalOrderId, customerData, cartItems, subtotal);
 
+  // Track checkout analytics in EvaDatabase
+  if (window.evaDB && typeof window.evaDB.trackCheckoutClick === 'function') {
+    window.evaDB.trackCheckoutClick({
+      orderId: finalOrderId,
+      customer: customerData,
+      items: cartItems,
+      subtotal: subtotal
+    });
+  }
+
   const phoneNum = EVA_DOU_WHATSAPP_NUMBER.replace(/[^0-9]/g, '');
 
   const itemsListText = cartItems.map(item => {

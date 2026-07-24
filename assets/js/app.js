@@ -6,6 +6,11 @@ document.addEventListener('DOMContentLoaded', () => {
   console.log('Eva Dou Application initialized.');
   console.log('Brand Slogan: "Not just a fragrance… it’s a story of femininity called Eva Dou"');
 
+  // Track page views automatically on app initialization
+  if (window.evaDB && typeof window.evaDB.trackPageView === 'function') {
+    window.evaDB.trackPageView();
+  }
+
   // Initialize UI components
   initHeaderScrollEffect();
   initMobileMenu();
@@ -34,6 +39,14 @@ document.addEventListener('DOMContentLoaded', () => {
   // Instantiate Checkout Modal Component
   if (typeof window.CheckoutModalComponent !== 'undefined') {
     window.checkoutModalInstance = new window.CheckoutModalComponent();
+  }
+
+  // Instantiate Owner Admin Dashboard Component
+  if (typeof window.AdminComponent !== 'undefined') {
+    window.adminInstance = new window.AdminComponent();
+    if (window.location.hash === '#admin') {
+      window.adminInstance.open();
+    }
   }
 
   // Instantiate Voiceover Intro Component

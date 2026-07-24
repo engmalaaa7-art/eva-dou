@@ -80,16 +80,25 @@ class ProductModalComponent {
   }
 
   renderModalContent() {
+    const liveProduct = (window.evaDB && typeof window.evaDB.getProduct === 'function') 
+      ? (window.evaDB.getProduct(this.currentProduct.id) || this.currentProduct)
+      : this.currentProduct;
+
+    this.currentProduct = liveProduct;
     const p = this.currentProduct;
-    const v = this.selectedVariant;
+    const v = this.selectedVariant || p.variants[0];
     const body = document.getElementById('modal-content-body');
+    const isSoldOut = !p.inStock || p.stockCount === 0;
 
     body.innerHTML = `
       <div class="modal-grid">
         <!-- Modal Left Image -->
         <div class="modal-visual">
-          <span class="modal-badge">${p.badge}</span>
-          <img src="${p.modalImage}" alt="Eva Dou ${p.name}" class="modal-image" onerror="this.src='${p.cardImage}'">
+          ${isSoldOut 
+            ? `<span class="modal-badge sold-out-badge">Sold Out</span>` 
+            : `<span class="modal-badge">${p.badge}</span>`
+          }
+          <img src="${p.modalImage}" alt="Eva Dou ${p.name}" class="modal-image ${isSoldOut ? 'sold-out' : ''}" onerror="this.src='${p.cardImage}'">
         </div>
 
         <!-- Modal Right Product Info -->
@@ -136,16 +145,25 @@ class ProductModalComponent {
           <!-- Quantity & Add to Cart Controls -->
           <div class="modal-action-row">
             <div class="quantity-control">
-              <button class="qty-btn" id="modal-qty-minus" aria-label="Decrease quantity">-</button>
+              <button class="qty-btn" id="modal-qty-minus" aria-label="Decrease quantity" ${isSoldOut ? 'disabled' : ''}>-</button>
               <span class="qty-value" id="modal-qty-val">${this.selectedQuantity}</span>
-              <button class="qty-btn" id="modal-qty-plus" aria-label="Increase quantity">+</button>
+              <button class="qty-btn" id="modal-qty-plus" aria-label="Increase quantity" ${isSoldOut ? 'disabled' : ''}>+</button>
             </div>
 
-            <button class="btn btn-primary modal-add-cart-btn" id="modal-add-cart-cta">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
-              </svg>
-              Add to Cart — ${(v.price * this.selectedQuantity).toFixed(0)} EGP
+            <button 
+              class="btn btn-primary modal-add-cart-btn ${isSoldOut ? 'disabled' : ''}" 
+              id="modal-add-cart-cta"
+              ${isSoldOut ? 'disabled' : ''}
+            >
+              ${isSoldOut 
+                ? 'Item Currently Sold Out' 
+                : `
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
+                  </svg>
+                  Add to Cart — ${(v.price * this.selectedQuantity).toFixed(0)} EGP
+                `
+              }
             </button>
           </div>
 
