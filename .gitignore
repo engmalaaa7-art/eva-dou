@@ -10,3 +10,7 @@ Thumbs.db
 *.log
 
 .vercel
+
+# Junk binaries
+*.winmd
+*.exe
