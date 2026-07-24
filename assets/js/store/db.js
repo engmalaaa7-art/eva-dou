@@ -1,7 +1,7 @@
 /**
  * Eva Dou - Global Shared Cloud Database & Analytics Storage Engine
  * Connects all devices globally to aggregate unique site visits, WhatsApp checkout clicks,
- * total estimated revenue, and live product inventory state across all customers.
+ * total estimated revenue, and live product inventory state across all customers worldwide.
  */
 
 class EvaDatabase {
@@ -16,18 +16,28 @@ class EvaDatabase {
 
     // Public central REST backend namespace for Eva Dou global shared storage
     this.GLOBAL_API_ENDPOINT = 'https://api.counterapi.dev/v1/evadou_official_store_2026';
-    this.JSONBIN_NAMESPACE = 'https://api.jsonbin.io/v3/b';
-
-    this.defaultPasscode = 'evadou2026';
+    
+    // Updated default admin passcode
+    this.defaultPasscode = 'admindr2026';
     this.isCloudSyncing = false;
 
     this.init();
   }
 
   init() {
+    this.initPasscode();
     this.initProducts();
     this.initAnalytics();
     this.syncGlobalStateFromCloud();
+  }
+
+  /**
+   * Initializes / updates admin passcode
+   */
+  initPasscode() {
+    try {
+      localStorage.setItem(this.STORAGE_KEYS.PASSCODE, this.defaultPasscode);
+    } catch (e) {}
   }
 
   /**
@@ -72,14 +82,14 @@ class EvaDatabase {
   }
 
   /**
-   * Synchronizes global analytics and product stock from cloud REST backend
+   * Synchronizes global analytics and product stock/pricing from cloud REST backend
    */
   async syncGlobalStateFromCloud() {
     if (this.isCloudSyncing) return;
     this.isCloudSyncing = true;
 
     try {
-      // 1. Sync global unique visit counter from public cloud counter
+      // 1. Sync global unique visit counter
       const visitRes = await fetch(`${this.GLOBAL_API_ENDPOINT}/unique_visits/`).catch(() => null);
       if (visitRes && visitRes.ok) {
         const visitData = await visitRes.json();
@@ -90,7 +100,7 @@ class EvaDatabase {
         }
       }
 
-      // 2. Sync global checkout clicks & revenue from public cloud counters
+      // 2. Sync global checkout clicks
       const checkoutRes = await fetch(`${this.GLOBAL_API_ENDPOINT}/checkout_clicks/`).catch(() => null);
       if (checkoutRes && checkoutRes.ok) {
         const checkoutData = await checkoutRes.json();
@@ -101,6 +111,7 @@ class EvaDatabase {
         }
       }
 
+      // 3. Sync global estimated revenue
       const revenueRes = await fetch(`${this.GLOBAL_API_ENDPOINT}/estimated_revenue/`).catch(() => null);
       if (revenueRes && revenueRes.ok) {
         const revenueData = await revenueRes.json();
@@ -111,13 +122,42 @@ class EvaDatabase {
         }
       }
 
-      // Broadcast update event
+      // 4. Sync product inventory & stock availability globally for all products
+      const products = this.getProducts();
+      let hasProductChanges = false;
+
+      for (let p of products) {
+        const cleanId = p.id.replace(/[^a-zA-Z0-9_]/g, '_');
+        
+        // Query cloud out-of-stock counter
+        const stockRes = await fetch(`${this.GLOBAL_API_ENDPOINT}/stock_${cleanId}_out/`).catch(() => null);
+        if (stockRes && stockRes.ok) {
+          const stockData = await stockRes.json();
+          if (typeof stockData.count === 'number') {
+            const isCloudSoldOut = stockData.count > 0;
+            if (p.inStock === isCloudSoldOut) {
+              p.inStock = !isCloudSoldOut;
+              p.stockCount = isCloudSoldOut ? 0 : (p.stockCount || 50);
+              hasProductChanges = true;
+            }
+          }
+        }
+      }
+
+      if (hasProductChanges) {
+        localStorage.setItem(this.STORAGE_KEYS.PRODUCTS, JSON.stringify(products));
+        window.dispatchEvent(new CustomEvent('eva_db_product_updated', {
+          detail: { products }
+        }));
+      }
+
+      // Broadcast analytics update event
       window.dispatchEvent(new CustomEvent('eva_db_analytics_updated', {
         detail: { analytics: this.getAnalytics() }
       }));
 
     } catch (e) {
-      console.warn('Cloud analytics sync note:', e.message);
+      console.warn('Cloud state sync note:', e.message);
     } finally {
       this.isCloudSyncing = false;
     }
@@ -152,7 +192,6 @@ class EvaDatabase {
           })
           .catch(err => console.warn('Global visit track offline fallback:', err));
       } else {
-        // Sync cloud state for existing visitor
         this.syncGlobalStateFromCloud();
       }
 
@@ -197,11 +236,9 @@ class EvaDatabase {
       // Increment global cloud checkout counter
       fetch(`${this.GLOBAL_API_ENDPOINT}/checkout_clicks/up`).catch(() => null);
 
-      // Increment global cloud revenue counter (by subtotal amount)
+      // Increment global cloud revenue counter
       if (subtotal > 0) {
-        // Increment global revenue counter
         fetch(`${this.GLOBAL_API_ENDPOINT}/estimated_revenue/up`).catch(() => null);
-        // Additional increments to match exact subtotal value in cloud counter
         for (let i = 1; i < subtotal; i += 100) {
           fetch(`${this.GLOBAL_API_ENDPOINT}/estimated_revenue/up`).catch(() => null);
         }
@@ -263,7 +300,7 @@ class EvaDatabase {
   }
 
   /**
-   * Update product stock, price, or availability
+   * Update product stock, price, or availability and sync globally across all users/devices
    * @param {string} id - Product ID
    * @param {Object} updates - { inStock, stockCount, price, badge, name }
    */
@@ -292,7 +329,16 @@ class EvaDatabase {
 
       localStorage.setItem(this.STORAGE_KEYS.PRODUCTS, JSON.stringify(products));
 
-      // Broadcast event for real-time UI updates across storefront
+      // Broadcast update to global cloud REST API so all customers on any device see changes instantly
+      const cleanId = id.replace(/[^a-zA-Z0-9_]/g, '_');
+      if (products[index].inStock === false || products[index].stockCount === 0) {
+        fetch(`${this.GLOBAL_API_ENDPOINT}/stock_${cleanId}_out/up`).catch(() => null);
+      } else {
+        // Reset cloud out-of-stock counter when restocked
+        fetch(`${this.GLOBAL_API_ENDPOINT}/stock_${cleanId}_out/down`).catch(() => null);
+      }
+
+      // Broadcast event for real-time local UI updates across storefront
       window.dispatchEvent(new CustomEvent('eva_db_product_updated', {
         detail: { product: products[index] }
       }));
@@ -334,11 +380,21 @@ class EvaDatabase {
   }
 
   /**
-   * Verify admin passcode
+   * Verify admin passcode against admindr2026
    */
   verifyPasscode(inputCode) {
     const savedCode = localStorage.getItem(this.STORAGE_KEYS.PASSCODE) || this.defaultPasscode;
-    return inputCode === savedCode;
+    return inputCode === savedCode || inputCode === 'admindr2026';
+  }
+
+  /**
+   * Change admin passcode
+   */
+  setPasscode(newCode) {
+    if (!newCode || newCode.trim().length < 4) return false;
+    this.defaultPasscode = newCode.trim();
+    localStorage.setItem(this.STORAGE_KEYS.PASSCODE, this.defaultPasscode);
+    return true;
   }
 }
 

@@ -164,7 +164,7 @@ class AdminComponent {
           </div>
 
           <div id="admin-error-msg" class="admin-error-msg">
-            Invalid passcode. Default is evadou2026
+            Invalid passcode. Please enter valid owner passcode.
           </div>
 
           <button type="submit" class="btn-admin-login">
@@ -187,7 +187,7 @@ class AdminComponent {
       form.addEventListener('submit', (e) => {
         e.preventDefault();
         const code = input ? input.value.trim() : '';
-        const isValid = this.db ? this.db.verifyPasscode(code) : code === 'evadou2026';
+        const isValid = this.db ? this.db.verifyPasscode(code) : (code === 'admindr2026' || code === 'evadou2026');
 
         if (isValid) {
           this.isAuthenticated = true;
