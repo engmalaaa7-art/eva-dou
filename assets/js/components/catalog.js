@@ -154,6 +154,9 @@ class CatalogComponent {
 
     this.container.innerHTML = productList.map(product => {
       const defaultVariant = product.variants ? product.variants[0] : { price: 150, size: '250 Ml' };
+      const basePrice = defaultVariant.price || 150;
+      const discount = product.discount || 0;
+      const finalPrice = (discount > 0 && discount < 100) ? Math.round(basePrice * (1 - discount / 100)) : basePrice;
       const isSoldOut = !product.inStock || product.stockCount === 0;
 
       return `
@@ -161,7 +164,9 @@ class CatalogComponent {
           <div class="product-card-img-wrapper">
             ${isSoldOut 
               ? `<span class="product-badge sold-out-badge">Sold Out</span>` 
-              : `<span class="product-badge">${product.badge}</span>`
+              : discount > 0
+                ? `<span class="product-badge discount-badge">-${discount}% OFF</span>`
+                : `<span class="product-badge">${product.badge}</span>`
             }
             <img 
               src="${product.cardImage}" 
@@ -189,7 +194,13 @@ class CatalogComponent {
             <div class="product-card-footer">
               <div class="product-pricing">
                 <span class="product-size">${defaultVariant.size}</span>
-                <span class="product-price">${defaultVariant.price} <small>EGP</small></span>
+                ${discount > 0 
+                  ? `<div style="display: flex; align-items: baseline; gap: 0.35rem;">
+                      <span class="original-price">${basePrice} EGP</span>
+                      <span class="product-price" style="color: #E11D48;">${finalPrice} <small>EGP</small></span>
+                     </div>`
+                  : `<span class="product-price">${basePrice} <small>EGP</small></span>`
+                }
               </div>
               <button 
                 class="btn-card-action btn-add-cart ${isSoldOut ? 'disabled' : ''}" 

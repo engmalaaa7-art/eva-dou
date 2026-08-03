@@ -98,20 +98,27 @@ class CartStore {
     const defaultVariant = (product.variants && product.variants.length > 0) ? product.variants[0] : { size: '250 Ml', price: 150 };
     const selectedVariant = variant || defaultVariant;
     const size = selectedVariant.size || '250 Ml';
-    const price = Number(selectedVariant.price) || 150;
+    const basePrice = Number(selectedVariant.price) || 150;
+    const discount = Number(product.discount) || 0;
+    const effectivePrice = (discount > 0 && discount < 100) ? Math.round(basePrice * (1 - discount / 100)) : basePrice;
     const productId = product.id || product.productId;
 
     const existingIndex = this.items.findIndex(item => (item.productId === productId || item.id === productId) && item.size === size);
 
     if (existingIndex > -1) {
       this.items[existingIndex].quantity += quantity;
+      this.items[existingIndex].price = effectivePrice;
+      this.items[existingIndex].originalPrice = basePrice;
+      this.items[existingIndex].discount = discount;
     } else {
       this.items.push({
         id: `${productId}_${size.replace(/\s+/g, '_')}`,
         productId: productId,
         name: product.name,
         size: size,
-        price: price,
+        price: effectivePrice,
+        originalPrice: basePrice,
+        discount: discount,
         cardImage: product.cardImage || 'assets/images/hero.jpg',
         badge: product.badge || '',
         quantity: quantity

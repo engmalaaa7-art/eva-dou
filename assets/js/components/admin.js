@@ -311,7 +311,7 @@ class AdminComponent {
                 onerror="this.src='assets/images/hero.jpg'"
               >
               <div class="top-seller-details">
-                <h4>🏆 Store Best Seller: ${topSeller ? topSeller.name : 'Burberry Hai'}</h4>
+                <h4>🏆 Store Best Seller: ${topSeller ? topSeller.name : 'Burberry Hair'}</h4>
                 <p>${topSeller ? topSeller.slogan : 'Elegance that accompanies your every step.'}</p>
               </div>
             </div>
@@ -329,7 +329,7 @@ class AdminComponent {
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                   <path d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/>
                 </svg>
-                Inventory Restock Controls & Pricing
+                Inventory Restock Controls, Pricing & Discounts
               </h3>
             </div>
 
@@ -340,7 +340,9 @@ class AdminComponent {
                     <th>Product</th>
                     <th>Status</th>
                     <th>Stock Count</th>
-                    <th>Price (EGP)</th>
+                    <th>Original Price</th>
+                    <th>Discount (%)</th>
+                    <th>Final Price</th>
                     <th>One-Click Availability</th>
                   </tr>
                 </thead>
@@ -348,6 +350,8 @@ class AdminComponent {
                   ${products.map(p => {
                     const variant = p.variants ? p.variants[0] : { price: 150 };
                     const price = variant.price || 150;
+                    const discount = p.discount || 0;
+                    const finalPrice = discount > 0 ? Math.round(price * (1 - discount / 100)) : price;
                     const isAvailable = p.inStock && (p.stockCount === undefined || p.stockCount > 0);
 
                     return `
@@ -397,6 +401,26 @@ class AdminComponent {
                           </div>
                         </td>
                         <td>
+                          <div class="stock-ctrl-group">
+                            <input 
+                              type="number" 
+                              class="discount-input-num" 
+                              value="${discount}"
+                              min="0"
+                              max="99"
+                              step="5"
+                              placeholder="0%"
+                            />
+                            <small style="color: #F43F5E;">%</small>
+                          </div>
+                        </td>
+                        <td>
+                          <div style="font-weight: 700; color: ${discount > 0 ? '#4ADE80' : '#F8F5F0'}; font-size: 0.95rem;">
+                            ${finalPrice} <small style="color: #C59B6A; font-weight: normal;">EGP</small>
+                            ${discount > 0 ? `<div style="font-size: 0.72rem; color: #F43F5E; font-weight: 600;">(-${discount}% OFF)</div>` : ''}
+                          </div>
+                        </td>
+                        <td>
                           <button class="btn-toggle-status ${isAvailable ? 'mark-soldout' : 'mark-available'}" data-product-id="${p.id}">
                             ${isAvailable ? 'Mark Out of Stock' : 'Mark Available'}
                           </button>
@@ -443,7 +467,7 @@ class AdminComponent {
       });
     }
 
-    // Bind Table Interactions (Stock +/- buttons, Price changes, Status Toggles)
+    // Bind Table Interactions (Stock +/- buttons, Price changes, Discount changes, Status Toggles)
     const tableBody = document.querySelector('.admin-table tbody');
     if (tableBody) {
       tableBody.addEventListener('click', (e) => {
@@ -478,10 +502,11 @@ class AdminComponent {
         }
       });
 
-      // Handle direct manual input change for stock & price
+      // Handle direct manual input change for stock, price & discount
       tableBody.addEventListener('change', (e) => {
         const stockInput = e.target.closest('.stock-input-num');
         const priceInput = e.target.closest('.price-input-num');
+        const discountInput = e.target.closest('.discount-input-num');
         const row = e.target.closest('tr');
 
         if (!row) return;
@@ -494,6 +519,10 @@ class AdminComponent {
         } else if (priceInput && productId) {
           const newPrice = Math.max(1, parseFloat(priceInput.value) || 150);
           this.db.updateProduct(productId, { price: newPrice });
+          this.renderDashboard();
+        } else if (discountInput && productId) {
+          const newDiscount = Math.max(0, Math.min(99, parseInt(discountInput.value, 10) || 0));
+          this.db.updateProduct(productId, { discount: newDiscount });
           this.renderDashboard();
         }
       });

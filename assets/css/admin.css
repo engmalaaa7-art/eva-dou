@@ -537,6 +537,25 @@
   outline: none;
 }
 
+.discount-input-num {
+  width: 60px;
+  background: rgba(10, 10, 10, 0.8);
+  border: 1px solid rgba(244, 63, 94, 0.4);
+  border-radius: 6px;
+  padding: 0.25rem 0.4rem;
+  color: #F43F5E;
+  text-align: center;
+  font-size: 0.85rem;
+  font-weight: 700;
+  outline: none;
+  transition: all 0.2s ease;
+}
+
+.discount-input-num:focus {
+  border-color: #F43F5E;
+  box-shadow: 0 0 10px rgba(244, 63, 94, 0.3);
+}
+
 .btn-toggle-status {
   padding: 0.4rem 0.8rem;
   border-radius: 8px;

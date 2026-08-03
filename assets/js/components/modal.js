@@ -87,6 +87,9 @@ class ProductModalComponent {
     this.currentProduct = liveProduct;
     const p = this.currentProduct;
     const v = this.selectedVariant || p.variants[0];
+    const basePrice = v.price || 150;
+    const discount = p.discount || 0;
+    const finalPrice = (discount > 0 && discount < 100) ? Math.round(basePrice * (1 - discount / 100)) : basePrice;
     const body = document.getElementById('modal-content-body');
     const isSoldOut = !p.inStock || p.stockCount === 0;
 
@@ -96,7 +99,9 @@ class ProductModalComponent {
         <div class="modal-visual">
           ${isSoldOut 
             ? `<span class="modal-badge sold-out-badge">Sold Out</span>` 
-            : `<span class="modal-badge">${p.badge}</span>`
+            : discount > 0
+              ? `<span class="modal-badge discount-badge">-${discount}% OFF</span>`
+              : `<span class="modal-badge">${p.badge}</span>`
           }
           <img src="${p.modalImage}" alt="Eva Dou ${p.name}" class="modal-image ${isSoldOut ? 'sold-out' : ''}" onerror="this.src='${p.cardImage}'">
         </div>
@@ -110,7 +115,14 @@ class ProductModalComponent {
           </div>
 
           <div class="modal-price-box">
-            <span class="modal-price">${v.price} <small>EGP</small></span>
+            ${discount > 0
+              ? `<div style="display: flex; align-items: baseline; gap: 0.5rem;">
+                  <span class="original-price" style="font-size: 1.2rem;">${basePrice} EGP</span>
+                  <span class="modal-price" style="color: #E11D48;">${finalPrice} <small>EGP</small></span>
+                  <span class="discount-tag">-${discount}% OFF</span>
+                 </div>`
+              : `<span class="modal-price">${basePrice} <small>EGP</small></span>`
+            }
             <span class="modal-size-tag">${v.size} Bottle</span>
           </div>
 
@@ -136,7 +148,7 @@ class ProductModalComponent {
             <div class="size-options">
               ${p.variants.map(varItem => `
                 <button class="size-btn ${varItem.size === v.size ? 'active' : ''}" data-size="${varItem.size}">
-                  ${varItem.size} - ${varItem.price} EGP
+                  ${varItem.size} - ${discount > 0 ? Math.round(varItem.price * (1 - discount / 100)) : varItem.price} EGP
                 </button>
               `).join('')}
             </div>
@@ -161,7 +173,7 @@ class ProductModalComponent {
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <path d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
                   </svg>
-                  Add to Cart — ${(v.price * this.selectedQuantity).toFixed(0)} EGP
+                  Add to Cart — ${(finalPrice * this.selectedQuantity).toFixed(0)} EGP
                 `
               }
             </button>
@@ -238,8 +250,11 @@ class ProductModalComponent {
   }
 
   updateCTAButtonText(btn) {
-    if (!btn || !this.selectedVariant) return;
-    const totalPrice = this.selectedVariant.price * this.selectedQuantity;
+    if (!btn || !this.selectedVariant || !this.currentProduct) return;
+    const basePrice = Number(this.selectedVariant.price) || 150;
+    const discount = Number(this.currentProduct.discount) || 0;
+    const finalPrice = (discount > 0 && discount < 100) ? Math.round(basePrice * (1 - discount / 100)) : basePrice;
+    const totalPrice = finalPrice * this.selectedQuantity;
     btn.innerHTML = `
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
         <path d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />

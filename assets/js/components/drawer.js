@@ -287,7 +287,12 @@ class CartDrawerComponent {
 
                 <div class="cart-item-meta">
                   <span class="cart-item-size">${item.size}</span>
-                  <span class="cart-item-unit-price">${item.price} EGP</span>
+                  <span class="cart-item-unit-price">
+                    ${item.discount > 0 && item.originalPrice
+                      ? `<span class="original-price" style="font-size: 0.75rem;">${item.originalPrice} EGP</span> <strong style="color: #E11D48;">${item.price} EGP</strong>`
+                      : `${item.price} EGP`
+                    }
+                  </span>
                 </div>
 
                 <div class="cart-item-actions">

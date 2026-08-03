@@ -6,14 +6,15 @@
 const EVA_DOU_PRODUCTS = [
   {
     id: "eva-splash-burberry-hai",
-    name: "Burberry Hai",
+    name: "Burberry Hair",
     slug: "burberry-hai",
     category: "body-splash",
     categoryLabel: "Body Splash & Mist",
     badge: "Bestseller",
+    discount: 0,
     slogan: "Elegance that accompanies your every step.",
     shortDescription: "Elegance that accompanies your every step.",
-    fullDescription: "Burberry Hai embodies timeless British elegance and refined allure. Opening with luminous notes of sun-drenched orchard blossoms and sweet mandarin, it settles into a heart of white peony and lavender. The lingering finish envelops your skin in velvety amber, soft musk, and comforting vanilla cream.",
+    fullDescription: "Burberry Hair embodies timeless British elegance and refined allure. Opening with luminous notes of sun-drenched orchard blossoms and sweet mandarin, it settles into a heart of white peony and lavender. The lingering finish envelops your skin in velvety amber, soft musk, and comforting vanilla cream.",
     fragranceNotes: {
       top: "Crisp Apple, Fresh Mandarin, Orchard Blossom",
       heart: "White Peony, Soft Lavender, Freesia",

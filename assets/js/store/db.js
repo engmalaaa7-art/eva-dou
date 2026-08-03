@@ -49,12 +49,32 @@ class EvaDatabase {
       if (!existing && typeof window.EVA_DOU_PRODUCTS !== 'undefined') {
         const initialProducts = window.EVA_DOU_PRODUCTS.map(p => ({
           ...p,
+          discount: p.discount || 0,
           inStock: true,
           stockCount: 50,
           ordersCount: 0,
           revenueGenerated: 0
         }));
         localStorage.setItem(this.STORAGE_KEYS.PRODUCTS, JSON.stringify(initialProducts));
+      } else if (existing) {
+        // Migration check for existing storage
+        let storedProducts = JSON.parse(existing);
+        let updated = false;
+        storedProducts = storedProducts.map(p => {
+          if (p.name === 'Burberry Hai') {
+            p.name = 'Burberry Hair';
+            p.fullDescription = (p.fullDescription || '').replace('Burberry Hai', 'Burberry Hair');
+            updated = true;
+          }
+          if (p.discount === undefined) {
+            p.discount = 0;
+            updated = true;
+          }
+          return p;
+        });
+        if (updated) {
+          localStorage.setItem(this.STORAGE_KEYS.PRODUCTS, JSON.stringify(storedProducts));
+        }
       }
     } catch (e) {
       console.warn('LocalStorage error during product DB initialization:', e);
@@ -314,6 +334,11 @@ class EvaDatabase {
         ...products[index],
         ...updates
       };
+
+      if (updates.discount !== undefined) {
+        const disc = Math.max(0, Math.min(99, Number(updates.discount) || 0));
+        products[index].discount = disc;
+      }
 
       if (updates.price !== undefined && products[index].variants && products[index].variants[0]) {
         products[index].variants[0].price = Number(updates.price);

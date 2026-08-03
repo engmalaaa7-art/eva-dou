@@ -1997,4 +1997,31 @@
   100% { transform: scale(1); opacity: 1; filter: blur(0); }
 }
 
+/* --- Discount Badges & Price Formatting --- */
+.discount-badge {
+  background-color: #E11D48 !important;
+  color: #FFFFFF !important;
+  font-weight: 700 !important;
+  box-shadow: 0 2px 8px rgba(225, 29, 72, 0.4) !important;
+}
+
+.original-price {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  text-decoration: line-through;
+  font-weight: 400;
+  margin-right: 0.25rem;
+}
+
+.discount-tag {
+  background-color: rgba(225, 29, 72, 0.12);
+  color: #E11D48;
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 0.2rem 0.6rem;
+  border-radius: var(--radius-full);
+  border: 1px solid rgba(225, 29, 72, 0.25);
+}
+
+
 
