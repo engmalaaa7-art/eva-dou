@@ -184,10 +184,17 @@ class AdminComponent {
     if (input) setTimeout(() => input.focus(), 150);
 
     if (form) {
-      form.addEventListener('submit', (e) => {
+      form.addEventListener('submit', async (e) => {
         e.preventDefault();
         const code = input ? input.value.trim() : '';
-        const isValid = this.db ? this.db.verifyPasscode(code) : (code === 'admindr2026' || code === 'evadou2026');
+        
+        let isValid = false;
+        if (this.db && typeof this.db.loginAdmin === 'function') {
+          const authResult = await this.db.loginAdmin('admin@evadou.com', code);
+          isValid = authResult.success;
+        } else {
+          isValid = (code === 'admindr2026' || code === 'evadou2026');
+        }
 
         if (isValid) {
           this.isAuthenticated = true;
