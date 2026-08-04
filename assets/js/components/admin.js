@@ -465,10 +465,13 @@ class AdminComponent {
     }
 
     if (logoutBtn) {
-      logoutBtn.addEventListener('click', () => {
+      logoutBtn.addEventListener('click', async () => {
         this.isAuthenticated = false;
         try {
           sessionStorage.removeItem('eva_admin_authenticated');
+          if (this.db && typeof this.db.logoutAdmin === 'function') {
+            await this.db.logoutAdmin();
+          }
         } catch (e) {}
         this.close();
       });
