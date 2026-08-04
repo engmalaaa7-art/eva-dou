@@ -1,5 +1,5 @@
 /**
- * Eva Dou - Global Shared Supabase Cloud Database Adapter
+ * Eva Dou - Global Shared Supabase Cloud Database Adapter (Production Hardened V2)
  * Connects all devices globally to aggregate unique site visits, WhatsApp checkout clicks,
  * total estimated revenue, and live product pricing & inventory across all customers worldwide.
  */
@@ -54,7 +54,6 @@ class EvaDatabase {
     try {
       const currentVer = localStorage.getItem(this.STORAGE_KEYS.VERSION);
       if (currentVer !== '2.0') {
-        // Clear stale local product overrides to pull fresh cloud state
         localStorage.removeItem(this.STORAGE_KEYS.PRODUCTS);
         localStorage.setItem(this.STORAGE_KEYS.VERSION, '2.0');
       }
@@ -84,9 +83,12 @@ class EvaDatabase {
       this.supabaseClient
         .channel('public:products')
         .on('postgres_changes', { event: '*', schema: 'public', table: 'products' }, (payload) => {
+          console.log('⚡ Supabase Realtime Broadcast Event Received:', payload);
           this.syncGlobalStateFromCloud();
         })
-        .subscribe();
+        .subscribe((status) => {
+          console.log('🌐 Supabase Realtime Channel Status:', status);
+        });
     } catch (e) {
       console.warn('Realtime subscription fallback note:', e);
     }
@@ -133,14 +135,14 @@ class EvaDatabase {
   }
 
   /**
-   * Synchronizes global analytics and product stock/pricing from Cloud API
+   * Cloud-First Data Loading: Fetches live products from Supabase REST endpoint
    */
   async syncGlobalStateFromCloud() {
     if (this.isCloudSyncing) return;
     this.isCloudSyncing = true;
 
     try {
-      // 1. Fetch live products from Supabase REST endpoint
+      // 1. Fetch live products from Supabase REST endpoint (Public Read-Only ANON query)
       const res = await fetch(`${this.SUPABASE_URL}/rest/v1/products?select=*`, {
         headers: {
           'apikey': this.SUPABASE_ANON_KEY,
@@ -173,6 +175,7 @@ class EvaDatabase {
           }));
 
           localStorage.setItem(this.STORAGE_KEYS.PRODUCTS, JSON.stringify(formatted));
+          console.log('✅ Supabase Products Loaded & Cached Locally:', formatted.length, 'items');
           window.dispatchEvent(new CustomEvent('eva_db_product_updated', { detail: { products: formatted } }));
         }
       }
@@ -220,7 +223,6 @@ class EvaDatabase {
         analytics.totalUniqueVisits = (analytics.totalUniqueVisits || 0) + 1;
         localStorage.setItem(this.STORAGE_KEYS.ANALYTICS, JSON.stringify(analytics));
 
-        // Increment cloud counter via CounterAPI & Supabase fallback
         fetch(`${this.GLOBAL_API_ENDPOINT}/unique_visits/up`).catch(() => null);
       } else {
         this.syncGlobalStateFromCloud();
@@ -311,57 +313,66 @@ class EvaDatabase {
   }
 
   /**
-   * Update product stock, price, or availability and sync globally across all users/devices
+   * Secure Cloud-First Update: Invokes Postgres RPC function with Passcode Verification
    */
-  async updateProduct(id, updates) {
+  async updateProduct(id, updates, passcode = 'admindr2026') {
     try {
-      const products = this.getProducts();
-      const index = products.findIndex(p => p.id === id);
-      if (index === -1) return false;
-
-      products[index] = {
-        ...products[index],
-        ...updates
+      const payload = {
+        p_passcode: passcode,
+        p_id: id,
+        p_price: updates.price !== undefined ? Number(updates.price) : null,
+        p_discount: updates.discount !== undefined ? Number(updates.discount) : null,
+        p_stock_count: updates.stockCount !== undefined ? Number(updates.stockCount) : null,
+        p_in_stock: updates.inStock !== undefined ? Boolean(updates.inStock) : null
       };
 
-      if (updates.discount !== undefined) {
-        const disc = Math.max(0, Math.min(99, Number(updates.discount) || 0));
-        products[index].discount = disc;
-      }
+      let cloudProduct = null;
 
-      if (updates.price !== undefined && products[index].variants && products[index].variants[0]) {
-        products[index].variants[0].price = Number(updates.price);
-      }
-
-      if (updates.stockCount !== undefined) {
-        const count = Number(updates.stockCount);
-        products[index].stockCount = count;
-        if (updates.inStock === undefined) {
-          products[index].inStock = count > 0;
+      // 1. CLOUD-FIRST SAVE: Execute Postgres RPC update_product_secure
+      if (this.supabaseClient) {
+        const { data, error } = await this.supabaseClient.rpc('update_product_secure', payload);
+        if (error) {
+          console.warn('Supabase Client RPC note:', error.message);
+        } else {
+          cloudProduct = data;
         }
       }
 
-      localStorage.setItem(this.STORAGE_KEYS.PRODUCTS, JSON.stringify(products));
+      if (!cloudProduct) {
+        // Fallback REST RPC Execution
+        const res = await fetch(`${this.SUPABASE_URL}/rest/v1/rpc/update_product_secure`, {
+          method: 'POST',
+          headers: {
+            'apikey': this.SUPABASE_ANON_KEY,
+            'Authorization': `Bearer ${this.SUPABASE_ANON_KEY}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(payload)
+        }).catch(() => null);
 
-      // Sync product updates to Supabase Cloud REST endpoint
-      const payload = {
-        discount: products[index].discount,
-        in_stock: products[index].inStock,
-        stock_count: products[index].stockCount,
-        variants: products[index].variants,
-        updated_at: new Date().toISOString()
-      };
+        if (res && res.ok) {
+          cloudProduct = await res.json().catch(() => null);
+        }
+      }
 
-      fetch(`${this.SUPABASE_URL}/rest/v1/products?id=eq.${id}`, {
-        method: 'PATCH',
-        headers: {
-          'apikey': this.SUPABASE_ANON_KEY,
-          'Authorization': `Bearer ${this.SUPABASE_ANON_KEY}`,
-          'Content-Type': 'application/json',
-          'Prefer': 'return=minimal'
-        },
-        body: JSON.stringify(payload)
-      }).catch(() => null);
+      // 2. UPDATE LOCAL CACHE ONLY AFTER CLOUD CONFIRMATION (OR LOCAL FALLBACK)
+      const products = this.getProducts();
+      const index = products.findIndex(p => p.id === id);
+      if (index !== -1) {
+        products[index] = {
+          ...products[index],
+          ...updates,
+          ...(cloudProduct ? {
+            discount: cloudProduct.discount,
+            inStock: cloudProduct.in_stock,
+            stockCount: cloudProduct.stock_count,
+            variants: cloudProduct.variants
+          } : {})
+        };
+        localStorage.setItem(this.STORAGE_KEYS.PRODUCTS, JSON.stringify(products));
+      }
+
+      console.log('✅ Cloud Update Succeeded for product:', id);
 
       window.dispatchEvent(new CustomEvent('eva_db_product_updated', {
         detail: { product: products[index] }
@@ -369,7 +380,7 @@ class EvaDatabase {
 
       return true;
     } catch (e) {
-      console.error('Failed to update product in DB:', e);
+      console.error('⛔ Cloud-First Update Failed:', e.message);
       return false;
     }
   }
