@@ -23,6 +23,7 @@ class CatalogComponent {
     if (!this.container) return;
     this.renderFilterBar();
     this.renderCatalog(this.getProducts());
+    this.updateHeroPriceDisplay();
     this.bindEvents();
     this.listenToDBUpdates();
   }
@@ -42,6 +43,72 @@ class CatalogComponent {
       this.renderCatalog(products);
     } else if (this.activeCategory === 'body-splash') {
       this.renderCatalog(products.filter(p => p.category === 'body-splash'));
+    }
+    this.updateHeroPriceDisplay();
+  }
+
+  updateHeroPriceDisplay() {
+    const products = this.getProducts();
+    if (!products || products.length === 0) return;
+
+    let minFinalPrice = Infinity;
+    let maxFinalPrice = -Infinity;
+    let minBasePrice = Infinity;
+    let maxDiscount = 0;
+
+    products.forEach(p => {
+      const defaultVariant = p.variants ? p.variants[0] : { price: 150 };
+      const basePrice = Number(defaultVariant.price) || 150;
+      const discount = Number(p.discount) || 0;
+      const finalPrice = (discount > 0 && discount < 100) ? Math.round(basePrice * (1 - discount / 100)) : basePrice;
+
+      if (finalPrice < minFinalPrice) minFinalPrice = finalPrice;
+      if (finalPrice > maxFinalPrice) maxFinalPrice = finalPrice;
+      if (basePrice < minBasePrice) minBasePrice = basePrice;
+      if (discount > maxDiscount) maxDiscount = discount;
+    });
+
+    if (minFinalPrice === Infinity) {
+      minFinalPrice = 150;
+      minBasePrice = 150;
+    }
+
+    // 1. Floating Glass Card Subtext in Hero Visual Banner
+    const floatingCardSub = document.getElementById('hero-floating-card-sub');
+    if (floatingCardSub) {
+      if (maxDiscount > 0) {
+        if (minFinalPrice === maxFinalPrice) {
+          floatingCardSub.innerHTML = `Special Price: <del style="opacity: 0.65; margin-right: 4px;">${minBasePrice} EGP</del> <strong style="color: #E11D48;">${minFinalPrice} EGP</strong> <span style="background: rgba(225, 29, 72, 0.12); color: #E11D48; padding: 2px 6px; border-radius: 4px; font-weight: 700; font-size: 0.72rem; margin-left: 4px;">-${maxDiscount}% OFF</span>`;
+        } else {
+          floatingCardSub.innerHTML = `Special Offer: From <strong style="color: #E11D48;">${minFinalPrice} EGP</strong> <span style="background: rgba(225, 29, 72, 0.12); color: #E11D48; padding: 2px 6px; border-radius: 4px; font-weight: 700; font-size: 0.72rem; margin-left: 4px;">Up to -${maxDiscount}% OFF</span>`;
+        }
+      } else {
+        if (minFinalPrice === maxFinalPrice) {
+          floatingCardSub.innerHTML = `Special Price: <strong>${minFinalPrice} EGP</strong>`;
+        } else {
+          floatingCardSub.innerHTML = `Special Price: From <strong>${minFinalPrice} EGP</strong>`;
+        }
+      }
+    }
+
+    // 2. Hero Action Button Text
+    const exploreBtnText = document.getElementById('explore-collection-btn-text');
+    if (exploreBtnText) {
+      if (maxDiscount > 0) {
+        exploreBtnText.textContent = `Explore Collection (${minFinalPrice} EGP -${maxDiscount}% OFF)`;
+      } else {
+        exploreBtnText.textContent = `Explore Collection (${minFinalPrice} EGP)`;
+      }
+    }
+
+    // 3. Catalog Section Description
+    const catalogDesc = document.getElementById('catalog-section-description');
+    if (catalogDesc) {
+      if (maxDiscount > 0) {
+        catalogDesc.textContent = `Discover your personal signature scent from our 6 artisanal creations. Standard 250 Ml size starting from ${minFinalPrice} EGP (-${maxDiscount}% OFF).`;
+      } else {
+        catalogDesc.textContent = `Discover your personal signature scent from our 6 artisanal creations. Standard 250 Ml size for only ${minFinalPrice} EGP.`;
+      }
     }
   }
 
