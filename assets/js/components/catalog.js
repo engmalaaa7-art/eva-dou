@@ -74,7 +74,7 @@ class CatalogComponent {
     }
 
     // 1. Floating Glass Card Subtext in Hero Visual Banner
-    const floatingCardSub = document.getElementById('hero-floating-card-sub');
+    const floatingCardSub = document.getElementById('hero-floating-card-sub') || document.querySelector('.floating-glass-card .floating-card-sub');
     if (floatingCardSub) {
       if (maxDiscount > 0) {
         if (minFinalPrice === maxFinalPrice) {
