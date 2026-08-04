@@ -470,7 +470,7 @@ class AdminComponent {
     // Bind Table Interactions (Stock +/- buttons, Price changes, Discount changes, Status Toggles)
     const tableBody = document.querySelector('.admin-table tbody');
     if (tableBody) {
-      tableBody.addEventListener('click', (e) => {
+      tableBody.addEventListener('click', async (e) => {
         const toggleBtn = e.target.closest('.btn-toggle-status');
         const qtyBtn = e.target.closest('.btn-stock-qty');
 
@@ -481,7 +481,7 @@ class AdminComponent {
           if (currentProduct) {
             const nextStatus = !currentProduct.inStock;
             const newStockCount = nextStatus ? (currentProduct.stockCount > 0 ? currentProduct.stockCount : 50) : 0;
-            this.db.updateProduct(productId, { inStock: nextStatus, stockCount: newStockCount });
+            await this.db.updateProduct(productId, { inStock: nextStatus, stockCount: newStockCount });
             this.renderDashboard();
           }
         } else if (qtyBtn) {
@@ -496,14 +496,14 @@ class AdminComponent {
             
             input.value = currentVal;
             const inStock = currentVal > 0;
-            this.db.updateProduct(productId, { stockCount: currentVal, inStock });
+            await this.db.updateProduct(productId, { stockCount: currentVal, inStock });
             this.renderDashboard();
           }
         }
       });
 
       // Handle direct manual input change for stock, price & discount
-      tableBody.addEventListener('change', (e) => {
+      tableBody.addEventListener('change', async (e) => {
         const stockInput = e.target.closest('.stock-input-num');
         const priceInput = e.target.closest('.price-input-num');
         const discountInput = e.target.closest('.discount-input-num');
@@ -514,15 +514,15 @@ class AdminComponent {
 
         if (stockInput && productId) {
           const count = Math.max(0, parseInt(stockInput.value, 10) || 0);
-          this.db.updateProduct(productId, { stockCount: count, inStock: count > 0 });
+          await this.db.updateProduct(productId, { stockCount: count, inStock: count > 0 });
           this.renderDashboard();
         } else if (priceInput && productId) {
           const newPrice = Math.max(1, parseFloat(priceInput.value) || 150);
-          this.db.updateProduct(productId, { price: newPrice });
+          await this.db.updateProduct(productId, { price: newPrice });
           this.renderDashboard();
         } else if (discountInput && productId) {
           const newDiscount = Math.max(0, Math.min(99, parseInt(discountInput.value, 10) || 0));
-          this.db.updateProduct(productId, { discount: newDiscount });
+          await this.db.updateProduct(productId, { discount: newDiscount });
           this.renderDashboard();
         }
       });
