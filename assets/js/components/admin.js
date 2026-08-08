@@ -20,12 +20,11 @@ class AdminComponent {
   }
 
   checkSessionAuth() {
-    try {
-      const auth = sessionStorage.getItem('eva_admin_authenticated');
-      if (auth === 'true') {
-        this.isAuthenticated = true;
-      }
-    } catch (e) {}
+    if (this.db && this.db.isAdmin) {
+      this.isAuthenticated = true;
+    } else {
+      this.isAuthenticated = false;
+    }
   }
 
   createAdminOverlayDOM() {
@@ -42,6 +41,18 @@ class AdminComponent {
   }
 
   bindGlobalEvents() {
+    // Listen for Firebase Auth & Admin role state changes
+    window.addEventListener('eva_auth_state_changed', (e) => {
+      this.isAuthenticated = Boolean(e.detail && e.detail.isAdmin);
+      if (this.isOpen()) {
+        if (this.isAuthenticated) {
+          this.renderDashboard();
+        } else {
+          this.renderLoginView();
+        }
+      }
+    });
+
     // Listen for hash navigation e.g. #admin
     window.addEventListener('hashchange', () => {
       if (window.location.hash === '#admin') {
@@ -87,9 +98,11 @@ class AdminComponent {
       this.overlay.setAttribute('aria-hidden', 'false');
       document.body.style.overflow = 'hidden';
 
-      if (this.isAuthenticated) {
+      if (this.db && this.db.isAdmin) {
+        this.isAuthenticated = true;
         this.renderDashboard();
       } else {
+        this.isAuthenticated = false;
         this.renderLoginView();
       }
     }
@@ -97,7 +110,6 @@ class AdminComponent {
 
   close() {
     if (!this.overlay) return;
-    this.stopAutoSync();
     this.overlay.classList.remove('open');
     this.overlay.setAttribute('aria-hidden', 'true');
     document.body.style.overflow = '';
@@ -108,30 +120,12 @@ class AdminComponent {
     }
   }
 
-  startAutoSync() {
-    this.stopAutoSync();
-    this.autoSyncTimer = setInterval(() => {
-      if (this.db && typeof this.db.syncGlobalStateFromCloud === 'function') {
-        this.db.syncGlobalStateFromCloud().then(() => {
-          this.renderDashboard();
-        });
-      }
-    }, 10000);
-  }
-
-  stopAutoSync() {
-    if (this.autoSyncTimer) {
-      clearInterval(this.autoSyncTimer);
-      this.autoSyncTimer = null;
-    }
-  }
-
   isOpen() {
     return this.overlay && this.overlay.classList.contains('open');
   }
 
   /* --------------------------------------------------------------------------
-     PASSCODE AUTHENTICATION VIEW
+     FIREBASE EMAIL/PASSWORD AUTHENTICATION VIEW
      -------------------------------------------------------------------------- */
   renderLoginView() {
     const container = document.getElementById('admin-container');
@@ -148,26 +142,36 @@ class AdminComponent {
           </svg>
         </div>
 
-        <h2 class="admin-login-title">Owner Administration</h2>
-        <p class="admin-login-subtitle">Enter your store passcode to manage stock, pricing, and view analytics.</p>
+        <h2 class="admin-login-title">Admin Portal</h2>
+        <p class="admin-login-subtitle">Sign in with your Firebase admin credentials to manage inventory and pricing.</p>
 
         <form id="admin-passcode-form" class="admin-passcode-form">
+          <div class="admin-passcode-field" style="margin-bottom: 0.75rem;">
+            <input 
+              type="email" 
+              id="admin-email-input" 
+              class="admin-passcode-input" 
+              placeholder="Admin Email (e.g. admin@evadou.com)" 
+              autocomplete="email"
+              required 
+            />
+          </div>
           <div class="admin-passcode-field">
             <input 
               type="password" 
               id="admin-passcode-input" 
               class="admin-passcode-input" 
-              placeholder="••••••••" 
+              placeholder="Password" 
               autocomplete="current-password"
               required 
             />
           </div>
 
           <div id="admin-error-msg" class="admin-error-msg">
-            Invalid passcode. Please enter valid owner passcode.
+            Invalid email or password. Please try again.
           </div>
 
-          <button type="submit" class="btn-admin-login">
+          <button type="submit" id="admin-submit-btn" class="btn-admin-login">
             Authenticate & Access Dashboard
           </button>
         </form>
@@ -178,36 +182,44 @@ class AdminComponent {
     if (closeBtn) closeBtn.addEventListener('click', () => this.close());
 
     const form = document.getElementById('admin-passcode-form');
-    const input = document.getElementById('admin-passcode-input');
+    const emailInput = document.getElementById('admin-email-input');
+    const passInput = document.getElementById('admin-passcode-input');
     const errorMsg = document.getElementById('admin-error-msg');
+    const submitBtn = document.getElementById('admin-submit-btn');
 
-    if (input) setTimeout(() => input.focus(), 150);
+    if (emailInput) setTimeout(() => emailInput.focus(), 150);
 
     if (form) {
       form.addEventListener('submit', async (e) => {
         e.preventDefault();
-        const code = input ? input.value.trim() : '';
-        
-        let isValid = false;
-        if (this.db && typeof this.db.loginAdmin === 'function') {
-          const authResult = await this.db.loginAdmin('admin@evadou.com', code);
-          isValid = authResult.success;
-        } else {
-          isValid = (code === 'admindr2026' || code === 'evadou2026');
+        const email = emailInput ? emailInput.value.trim() : '';
+        const password = passInput ? passInput.value : '';
+
+        if (submitBtn) {
+          submitBtn.disabled = true;
+          submitBtn.textContent = 'Authenticating...';
         }
 
-        if (isValid) {
-          this.isAuthenticated = true;
-          try {
-            sessionStorage.setItem('eva_admin_authenticated', 'true');
-          } catch (err) {}
-          this.renderDashboard();
-        } else {
-          if (errorMsg) {
-            errorMsg.style.display = 'block';
-            input.value = '';
-            input.focus();
+        if (this.db && typeof this.db.loginAdmin === 'function') {
+          const authResult = await this.db.loginAdmin(email, password);
+          if (authResult.success) {
+            this.isAuthenticated = true;
+            this.renderDashboard();
+          } else {
+            this.isAuthenticated = false;
+            if (errorMsg) {
+              errorMsg.textContent = authResult.error || 'Authentication failed. Please verify credentials.';
+              errorMsg.style.display = 'block';
+            }
+            if (passInput) {
+              passInput.value = '';
+              passInput.focus();
+            }
           }
+        }
+        if (submitBtn) {
+          submitBtn.disabled = false;
+          submitBtn.textContent = 'Authenticate & Access Dashboard';
         }
       });
     }
@@ -449,18 +461,12 @@ class AdminComponent {
   }
 
   bindDashboardEvents() {
-    this.startAutoSync();
-
     const refreshBtn = document.getElementById('admin-refresh-btn');
     const logoutBtn = document.getElementById('admin-logout-btn');
 
     if (refreshBtn) {
       refreshBtn.addEventListener('click', () => {
-        if (this.db && typeof this.db.syncGlobalStateFromCloud === 'function') {
-          this.db.syncGlobalStateFromCloud().then(() => this.renderDashboard());
-        } else {
-          this.renderDashboard();
-        }
+        this.renderDashboard();
       });
     }
 
@@ -468,7 +474,6 @@ class AdminComponent {
       logoutBtn.addEventListener('click', async () => {
         this.isAuthenticated = false;
         try {
-          sessionStorage.removeItem('eva_admin_authenticated');
           if (this.db && typeof this.db.logoutAdmin === 'function') {
             await this.db.logoutAdmin();
           }
@@ -491,7 +496,10 @@ class AdminComponent {
           if (currentProduct) {
             const nextStatus = !currentProduct.inStock;
             const newStockCount = nextStatus ? (currentProduct.stockCount > 0 ? currentProduct.stockCount : 50) : 0;
-            await this.db.updateProduct(productId, { inStock: nextStatus, stockCount: newStockCount });
+            const success = await this.db.updateProduct(productId, { inStock: nextStatus, stockCount: newStockCount });
+            if (!success) {
+              alert('Cloud update failed! Please verify admin permissions.');
+            }
             this.renderDashboard();
           }
         } else if (qtyBtn) {
@@ -506,7 +514,10 @@ class AdminComponent {
             
             input.value = currentVal;
             const inStock = currentVal > 0;
-            await this.db.updateProduct(productId, { stockCount: currentVal, inStock });
+            const success = await this.db.updateProduct(productId, { stockCount: currentVal, inStock });
+            if (!success) {
+              alert('Cloud update failed! Please verify admin permissions.');
+            }
             this.renderDashboard();
           }
         }
@@ -522,19 +533,22 @@ class AdminComponent {
         if (!row) return;
         const productId = row.dataset.productId;
 
+        let success = true;
         if (stockInput && productId) {
           const count = Math.max(0, parseInt(stockInput.value, 10) || 0);
-          await this.db.updateProduct(productId, { stockCount: count, inStock: count > 0 });
-          this.renderDashboard();
+          success = await this.db.updateProduct(productId, { stockCount: count, inStock: count > 0 });
         } else if (priceInput && productId) {
           const newPrice = Math.max(1, parseFloat(priceInput.value) || 150);
-          await this.db.updateProduct(productId, { price: newPrice });
-          this.renderDashboard();
+          success = await this.db.updateProduct(productId, { price: newPrice });
         } else if (discountInput && productId) {
           const newDiscount = Math.max(0, Math.min(99, parseInt(discountInput.value, 10) || 0));
-          await this.db.updateProduct(productId, { discount: newDiscount });
-          this.renderDashboard();
+          success = await this.db.updateProduct(productId, { discount: newDiscount });
         }
+
+        if (!success) {
+          alert('Cloud update failed! Please verify admin permissions.');
+        }
+        this.renderDashboard();
       });
     }
   }

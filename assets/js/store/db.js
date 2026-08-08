@@ -14,16 +14,19 @@ class EvaDatabase {
 
     // Firebase App & Cloud Firestore Project Configuration
     this.FIREBASE_CONFIG = {
-      apiKey: "AIzaSyD-dummy_firebase_api_key_evadou_2026",
+      apiKey: "AIzaSyCyf83A9--HvGtLWKyAzvbTg0CK8UCH34Y",
       authDomain: "evadou-official.firebaseapp.com",
       projectId: "evadou-official",
-      storageBucket: "evadou-official.appspot.com",
-      messagingSenderId: "102938475610",
-      appId: "1:102938475610:web:abcdef1234567890"
+      storageBucket: "evadou-official.firebasestorage.app",
+      messagingSenderId: "355650601461",
+      appId: "1:355650601461:web:24a0a729f7660f4102e0bc"
     };
 
     this.firestore = null;
     this.auth = null;
+    this.currentUser = null;
+    this.isAdmin = false;
+    this.products = [];
     this.isCloudSyncing = false;
     this.unsubscribeRealtime = null;
 
@@ -68,10 +71,45 @@ class EvaDatabase {
 
         // Enable offline persistence for Firestore if available
         this.firestore.enablePersistence({ synchronizeTabs: true }).catch(() => null);
+
+        // Listen for Firebase Auth state changes
+        this.auth.onAuthStateChanged(async (user) => {
+          if (user) {
+            this.currentUser = user;
+            await this.verifyAdminRole(user.uid);
+          } else {
+            this.currentUser = null;
+            this.isAdmin = false;
+          }
+          window.dispatchEvent(new CustomEvent('eva_auth_state_changed', {
+            detail: { user: this.currentUser, isAdmin: this.isAdmin }
+          }));
+        });
       } catch (e) {
         console.warn('Firebase initialization note:', e);
       }
     }
+  }
+
+  /**
+   * Verifies if authenticated UID exists in admins/{uid} collection with role == 'admin'
+   */
+  async verifyAdminRole(uid) {
+    if (!this.firestore || !uid) {
+      this.isAdmin = false;
+      return false;
+    }
+    try {
+      const adminDoc = await this.firestore.collection('admins').doc(uid).get();
+      if (adminDoc.exists && adminDoc.data() && adminDoc.data().role === 'admin') {
+        this.isAdmin = true;
+        return true;
+      }
+    } catch (e) {
+      console.warn('Admin role authorization check failed:', e.message);
+    }
+    this.isAdmin = false;
+    return false;
   }
 
   /**
@@ -91,6 +129,7 @@ class EvaDatabase {
           });
 
           if (cloudProducts.length > 0) {
+            this.products = cloudProducts;
             localStorage.setItem(this.STORAGE_KEYS.PRODUCTS, JSON.stringify(cloudProducts));
             console.log('🔥 Firestore Realtime Broadcast Received:', cloudProducts.length, 'products');
             window.dispatchEvent(new CustomEvent('eva_db_product_updated', { detail: { products: cloudProducts } }));
@@ -121,10 +160,10 @@ class EvaDatabase {
           batch.set(ref, {
             ...product,
             discount: product.discount || 0,
-            inStock: true,
-            stockCount: 50,
-            ordersCount: 0,
-            revenueGenerated: 0,
+            inStock: product.inStock !== undefined ? product.inStock : true,
+            stockCount: product.stockCount !== undefined ? product.stockCount : 50,
+            ordersCount: product.ordersCount || 0,
+            revenueGenerated: product.revenueGenerated || 0,
             updatedAt: window.firebase.firestore.FieldValue.serverTimestamp()
           });
         });
@@ -169,59 +208,59 @@ class EvaDatabase {
   }
 
   /**
-   * Firebase Email & Password Authentication Login
+   * Firebase Email & Password Authentication & Admin Authorization
    */
   async loginAdmin(email, password) {
-    if (this.auth) {
-      try {
-        const adminEmail = email && email.includes('@') ? email : 'admin@evadou.com';
-        const userCredential = await this.auth.signInWithEmailAndPassword(adminEmail, password);
-        console.log('🔐 Firebase Admin Auth Successful:', userCredential.user.email);
-        return { success: true, user: userCredential.user };
-      } catch (e) {
-        console.warn('Firebase Auth Login note:', e.message);
-        // Fallback for offline or dev mode
-        if (password === 'admindr2026' || password === 'evadou2026') {
-          return { success: true, fallback: true };
-        }
-        return { success: false, error: e.message };
-      }
+    if (!this.auth || !this.firestore) {
+      return { success: false, error: 'Firebase is not initialized.' };
     }
 
-    if (password === 'admindr2026' || password === 'evadou2026') {
-      return { success: true, fallback: true };
+    try {
+      const userCredential = await this.auth.signInWithEmailAndPassword(email, password);
+      const user = userCredential.user;
+
+      const authorized = await this.verifyAdminRole(user.uid);
+      if (authorized) {
+        console.log('🔐 Firebase Admin Auth & Admin Role Verified:', user.email, 'UID:', user.uid);
+        this.currentUser = user;
+        return { success: true, user };
+      } else {
+        console.warn('⛔ Authenticated user UID is not in admins collection:', user.uid);
+        await this.auth.signOut();
+        this.currentUser = null;
+        return { success: false, error: 'Access Denied: User account is not registered in admins collection.' };
+      }
+    } catch (e) {
+      console.warn('Firebase Auth Login error:', e.message);
+      return { success: false, error: e.message };
     }
-    return { success: false };
   }
 
   /**
-   * Firebase Logout
+   * Firebase Sign Out
    */
   async logoutAdmin() {
     if (this.auth) {
       try {
         await this.auth.signOut();
+        this.currentUser = null;
+        this.isAdmin = false;
         console.log('🔓 Firebase Auth Sign Out Successful');
       } catch (e) {}
     }
   }
 
   getProducts() {
+    if (this.products && this.products.length > 0) {
+      return this.products;
+    }
     try {
       const dbProducts = JSON.parse(localStorage.getItem(this.STORAGE_KEYS.PRODUCTS) || '[]');
-      if (dbProducts.length === 0 && typeof window.EVA_DOU_PRODUCTS !== 'undefined') {
-        return window.EVA_DOU_PRODUCTS.map(p => ({
-          ...p,
-          inStock: true,
-          stockCount: 50,
-          ordersCount: 0,
-          revenueGenerated: 0
-        }));
+      if (dbProducts.length > 0) {
+        return dbProducts;
       }
-      return dbProducts;
-    } catch (e) {
-      return window.EVA_DOU_PRODUCTS || [];
-    }
+    } catch (e) {}
+    return window.EVA_DOU_PRODUCTS || [];
   }
 
   getProduct(id) {
@@ -230,17 +269,20 @@ class EvaDatabase {
   }
 
   /**
-   * Cloud-First Product Update in Firestore with instant Realtime Synchronization
+   * Cloud-First Product Update in Firestore with instant Realtime Synchronization.
+   * CLOUD UPDATE MUST SUCCEED BEFORE UPDATING LOCAL STATE.
    */
   async updateProduct(id, updates) {
-    try {
-      const payload = {};
+    if (!this.firestore) {
+      console.error('⛔ Firestore is not initialized.');
+      return false;
+    }
 
-      if (window.firebase && window.firebase.firestore) {
-        payload.updatedAt = window.firebase.firestore.FieldValue.serverTimestamp();
-      } else {
-        payload.updatedAt = new Date().toISOString();
-      }
+    try {
+      const payload = {
+        ...updates,
+        updatedAt: window.firebase.firestore.FieldValue.serverTimestamp()
+      };
 
       if (updates.discount !== undefined) {
         payload.discount = Math.max(0, Math.min(99, Number(updates.discount) || 0));
@@ -253,16 +295,17 @@ class EvaDatabase {
         payload.inStock = payload.stockCount > 0;
       }
       if (updates.price !== undefined) {
-        payload.variants = [{ size: "250 Ml", price: Math.max(1, Number(updates.price) || 150), isDefault: true }];
+        const existing = this.getProduct(id);
+        const variantSize = (existing && existing.variants && existing.variants[0]) ? existing.variants[0].size : '250 Ml';
+        payload.variants = [{ size: variantSize, price: Math.max(1, Number(updates.price) || 150), isDefault: true }];
+        delete payload.price;
       }
 
-      // 1. Update Firestore Cloud Document First
-      if (this.firestore) {
-        await this.firestore.collection('products').doc(id).update(payload);
-        console.log('🔥 Cloud Firestore Document Update Succeeded:', id);
-      }
+      // 1. MUST SUCCEED ON FIRESTORE CLOUD FIRST
+      await this.firestore.collection('products').doc(id).update(payload);
+      console.log('🔥 Cloud Firestore Document Update Succeeded:', id);
 
-      // 2. Update Local Cache AFTER Firestore Confirmation
+      // 2. Update Local Cache AFTER Cloud Confirmation
       const products = this.getProducts();
       const index = products.findIndex(p => p.id === id);
       if (index !== -1) {
@@ -274,6 +317,7 @@ class EvaDatabase {
           ...(payload.stockCount !== undefined ? { stockCount: payload.stockCount } : {}),
           ...(payload.variants !== undefined ? { variants: payload.variants } : {})
         };
+        this.products = products;
         localStorage.setItem(this.STORAGE_KEYS.PRODUCTS, JSON.stringify(products));
       }
 
