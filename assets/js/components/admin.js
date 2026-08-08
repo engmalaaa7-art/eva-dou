@@ -43,11 +43,12 @@ class AdminComponent {
   bindGlobalEvents() {
     // Listen for Firebase Auth & Admin role state changes
     window.addEventListener('eva_auth_state_changed', (e) => {
-      this.isAuthenticated = Boolean(e.detail && e.detail.isAdmin);
+      const isNowAdmin = Boolean(e.detail && e.detail.isAdmin);
+      this.isAuthenticated = isNowAdmin;
       if (this.isOpen()) {
-        if (this.isAuthenticated) {
+        if (isNowAdmin) {
           this.renderDashboard();
-        } else {
+        } else if (this.currentView === 'dashboard') {
           this.renderLoginView();
         }
       }
@@ -128,6 +129,7 @@ class AdminComponent {
      FIREBASE EMAIL/PASSWORD AUTHENTICATION VIEW
      -------------------------------------------------------------------------- */
   renderLoginView() {
+    this.currentView = 'login';
     const container = document.getElementById('admin-container');
     if (!container) return;
 
@@ -195,31 +197,43 @@ class AdminComponent {
         const email = emailInput ? emailInput.value.trim() : '';
         const password = passInput ? passInput.value : '';
 
+        if (errorMsg) errorMsg.style.display = 'none';
+
         if (submitBtn) {
           submitBtn.disabled = true;
           submitBtn.textContent = 'Authenticating...';
         }
 
-        if (this.db && typeof this.db.loginAdmin === 'function') {
-          const authResult = await this.db.loginAdmin(email, password);
-          if (authResult.success) {
-            this.isAuthenticated = true;
-            this.renderDashboard();
+        try {
+          if (this.db && typeof this.db.loginAdmin === 'function') {
+            const authResult = await this.db.loginAdmin(email, password);
+            if (authResult.success) {
+              this.isAuthenticated = true;
+              this.renderDashboard();
+            } else {
+              this.isAuthenticated = false;
+              if (errorMsg) {
+                errorMsg.textContent = authResult.error || 'Authentication failed. Please verify credentials.';
+                errorMsg.style.display = 'block';
+              }
+            }
           } else {
-            this.isAuthenticated = false;
             if (errorMsg) {
-              errorMsg.textContent = authResult.error || 'Authentication failed. Please verify credentials.';
+              errorMsg.textContent = 'Database engine is not initialized.';
               errorMsg.style.display = 'block';
             }
-            if (passInput) {
-              passInput.value = '';
-              passInput.focus();
-            }
           }
-        }
-        if (submitBtn) {
-          submitBtn.disabled = false;
-          submitBtn.textContent = 'Authenticate & Access Dashboard';
+        } catch (err) {
+          console.error('Unhandled submit error:', err);
+          if (errorMsg) {
+            errorMsg.textContent = 'An unexpected error occurred. Please try again.';
+            errorMsg.style.display = 'block';
+          }
+        } finally {
+          if (submitBtn) {
+            submitBtn.disabled = false;
+            submitBtn.textContent = 'Authenticate & Access Dashboard';
+          }
         }
       });
     }
@@ -229,6 +243,7 @@ class AdminComponent {
      NON-TECHNICAL OWNER DASHBOARD VIEW
      -------------------------------------------------------------------------- */
   renderDashboard() {
+    this.currentView = 'dashboard';
     const container = document.getElementById('admin-container');
     if (!container) return;
 

@@ -97,19 +97,40 @@ class EvaDatabase {
   async verifyAdminRole(uid) {
     if (!this.firestore || !uid) {
       this.isAdmin = false;
-      return false;
+      return { success: false, reason: 'missing_params', error: 'Firebase Firestore or UID missing.' };
     }
     try {
       const adminDoc = await this.firestore.collection('admins').doc(uid).get();
-      if (adminDoc.exists && adminDoc.data() && adminDoc.data().role === 'admin') {
-        this.isAdmin = true;
-        return true;
+      if (!adminDoc.exists) {
+        console.warn('⛔ Admin document missing in admins collection for UID:', uid);
+        this.isAdmin = false;
+        return {
+          success: false,
+          reason: 'admin-not-found',
+          error: 'Access Denied: No admin authorization document found for this user ID in admins collection.'
+        };
       }
+      const data = adminDoc.data();
+      if (!data || data.role !== 'admin') {
+        console.warn('⛔ User role is not admin for UID:', uid, 'Data:', data);
+        this.isAdmin = false;
+        return {
+          success: false,
+          reason: 'admin-role-mismatch',
+          error: 'Access Denied: Account is not assigned administrator privileges.'
+        };
+      }
+      this.isAdmin = true;
+      return { success: true };
     } catch (e) {
-      console.warn('Admin role authorization check failed:', e.message);
+      console.error('⛔ Firestore Admin Verification Error:', e.code || e.name, e.message);
+      this.isAdmin = false;
+      return {
+        success: false,
+        reason: e.code || 'permission-denied',
+        error: 'Access Denied: Could not verify authorization (' + (e.message || 'Permission denied') + ').'
+      };
     }
-    this.isAdmin = false;
-    return false;
   }
 
   /**
@@ -212,27 +233,52 @@ class EvaDatabase {
    */
   async loginAdmin(email, password) {
     if (!this.auth || !this.firestore) {
-      return { success: false, error: 'Firebase is not initialized.' };
+      console.error('Firebase Auth/Firestore not initialized');
+      return { success: false, code: 'not-initialized', error: 'Firebase engine is not initialized.' };
     }
 
     try {
+      console.log('Attempting Firebase Auth login for:', email);
       const userCredential = await this.auth.signInWithEmailAndPassword(email, password);
       const user = userCredential.user;
+      console.log('🔐 Firebase Auth Login Succeeded. Email:', user.email, 'UID:', user.uid);
 
-      const authorized = await this.verifyAdminRole(user.uid);
-      if (authorized) {
-        console.log('🔐 Firebase Admin Auth & Admin Role Verified:', user.email, 'UID:', user.uid);
+      const verification = await this.verifyAdminRole(user.uid);
+      if (verification.success) {
+        console.log('✅ Admin role authorization confirmed for UID:', user.uid);
         this.currentUser = user;
         return { success: true, user };
       } else {
-        console.warn('⛔ Authenticated user UID is not in admins collection:', user.uid);
+        console.warn('⛔ Auth succeeded but Admin authorization failed for UID:', user.uid, 'Reason:', verification.reason);
         await this.auth.signOut();
         this.currentUser = null;
-        return { success: false, error: 'Access Denied: User account is not registered in admins collection.' };
+        return {
+          success: false,
+          code: verification.reason,
+          error: verification.error || 'Access Denied: Account is not registered in admins collection.'
+        };
       }
     } catch (e) {
-      console.warn('Firebase Auth Login error:', e.message);
-      return { success: false, error: e.message };
+      console.error('⛔ Firebase Auth Error:', e.code, e.message);
+
+      let friendlyMessage = 'Login failed. Please check your email and password.';
+      if (e.code === 'auth/invalid-credential' || e.code === 'auth/wrong-password' || e.code === 'auth/user-not-found') {
+        friendlyMessage = 'Login failed. Invalid email or password.';
+      } else if (e.code === 'auth/invalid-email') {
+        friendlyMessage = 'Please enter a valid email address.';
+      } else if (e.code === 'auth/too-many-requests') {
+        friendlyMessage = 'Access temporarily disabled due to many failed attempts. Try again later.';
+      } else if (e.code === 'auth/network-request-failed') {
+        friendlyMessage = 'Network error. Please check your internet connection.';
+      } else if (e.message) {
+        friendlyMessage = e.message;
+      }
+
+      return {
+        success: false,
+        code: e.code || 'auth-error',
+        error: friendlyMessage
+      };
     }
   }
 
